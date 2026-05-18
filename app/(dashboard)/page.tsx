@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { XPBar } from '@/components/gamification/xp-bar'
 import { StreakPing } from '@/components/gamification/streak-ping'
+import { OnboardingModal } from '@/components/onboarding/onboarding-modal'
 import { BookOpen, Clock, CheckCircle } from 'lucide-react'
 import type { Profile, UserXP } from '@/types/database'
 
@@ -32,6 +33,9 @@ export default async function DashboardHome() {
   return (
     <div className="p-6 md:p-10 max-w-4xl">
       <StreakPing />
+      {!(profile as unknown as { onboarded: boolean }).onboarded && (
+        <OnboardingModal name={profile?.name ?? ''} />
+      )}
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-[var(--text)]">
