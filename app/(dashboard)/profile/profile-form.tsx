@@ -73,7 +73,7 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
     <div className="space-y-6">
       {/* Card principal */}
       <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6">
-        <div className="flex items-start gap-5">
+        <div className="flex flex-col sm:flex-row items-start gap-5">
           {/* Avatar */}
           <div className="relative shrink-0">
             {avatarSrc ? (

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { LessonPlayer } from '@/components/player/lesson-player'
 import { LessonComments } from '@/components/lesson/lesson-comments'
+import { LessonSidebarDrawer } from '@/components/lesson/lesson-sidebar-drawer'
 import { ArrowLeft, ArrowRight, CheckCircle, Circle, Lock, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ContentType, LessonStatus } from '@/types/database'
@@ -114,7 +115,7 @@ export default async function LearnPage({ params }: PageProps) {
   return (
     <div className="flex flex-col lg:flex-row gap-0 min-h-0">
       {/* Main content */}
-      <div className="flex-1 min-w-0 p-4 md:p-8 space-y-6">
+      <div className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
           <Link
@@ -201,8 +202,8 @@ export default async function LearnPage({ params }: PageProps) {
       </div>
 
       {/* Sidebar — lesson list */}
-      <aside className="lg:w-80 xl:w-96 border-t lg:border-t-0 lg:border-l border-[var(--border)] bg-[var(--surface)] flex flex-col overflow-y-auto lg:max-h-screen lg:sticky lg:top-0">
-        <div className="p-4 border-b border-[var(--border)]">
+      <LessonSidebarDrawer>
+        <div className="p-4 border-b border-[var(--border)] hidden lg:block">
           <h2 className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">
             Conteúdo do curso
           </h2>
@@ -269,7 +270,7 @@ export default async function LearnPage({ params }: PageProps) {
             </details>
           ))}
         </div>
-      </aside>
+      </LessonSidebarDrawer>
     </div>
   )
 }

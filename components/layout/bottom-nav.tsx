@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, BookOpen, Trophy, PenSquare, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, BookOpen, BarChart2, User, PenSquare, ShieldCheck } from 'lucide-react'
 import type { Role } from '@/types/database'
 
 interface BottomNavProps {
@@ -14,11 +14,16 @@ export function BottomNav({ role }: BottomNavProps) {
   const pathname = usePathname()
 
   const items = [
-    { href: '/',         label: 'Início',   icon: LayoutDashboard },
-    { href: '/courses',  label: 'Cursos',   icon: BookOpen },
-    { href: '/achievements', label: 'Troféus', icon: Trophy },
-    ...(role !== 'aluno' ? [{ href: '/studio', label: 'Studio', icon: PenSquare }] : []),
-    ...(role === 'admin' ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
+    { href: '/',            label: 'Início',  icon: LayoutDashboard },
+    { href: '/courses',     label: 'Cursos',  icon: BookOpen },
+    { href: '/leaderboard', label: 'Ranking', icon: BarChart2 },
+    { href: '/profile',     label: 'Perfil',  icon: User },
+    ...(role !== 'aluno'
+      ? [{ href: '/studio', label: 'Studio', icon: PenSquare }]
+      : []),
+    ...(role === 'admin'
+      ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck }]
+      : []),
   ].slice(0, 5)
 
   return (

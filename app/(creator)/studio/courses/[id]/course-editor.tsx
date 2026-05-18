@@ -122,21 +122,25 @@ export function CourseEditor({ course, modules }: { course: Course; modules: Mod
     <div className="p-6 md:p-10 max-w-3xl">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <Link href="/studio" className="text-[var(--muted)] hover:text-[var(--text)] transition-colors">
+        <Link href="/studio" className="text-[var(--muted)] hover:text-[var(--text)] transition-colors p-1">
           <ArrowLeft size={18} />
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-[var(--text)] truncate">{course.title}</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-[var(--text)] truncate">{course.title}</h1>
             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
           </div>
           <p className="text-xs text-[var(--muted)] mt-0.5">Editor de curso</p>
         </div>
         <Link href={`/studio/courses/${course.id}/analytics`}>
-          <Button variant="ghost" size="sm" className="gap-1.5"><BarChart2 size={14} />Analytics</Button>
+          <Button variant="ghost" size="sm" className="gap-1.5">
+            <BarChart2 size={14} /><span className="hidden sm:inline">Analytics</span>
+          </Button>
         </Link>
         <Link href={`/courses/${course.id}`} target="_blank">
-          <Button variant="ghost" size="sm" className="gap-1.5"><Eye size={14} />Preview</Button>
+          <Button variant="ghost" size="sm" className="gap-1.5">
+            <Eye size={14} /><span className="hidden sm:inline">Preview</span>
+          </Button>
         </Link>
       </div>
 
