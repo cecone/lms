@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { enrollInCourse } from '@/app/actions/enroll'
 import { Button } from '@/components/ui/button'
 import { BookOpen } from 'lucide-react'
 
@@ -11,14 +11,13 @@ interface EnrollButtonProps {
   userId: string
 }
 
-export function EnrollButton({ courseId, userId }: EnrollButtonProps) {
+export function EnrollButton({ courseId }: EnrollButtonProps) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   async function handleEnroll() {
     setLoading(true)
-    const supabase = createClient()
-    await supabase.from('enrollments').insert({ user_id: userId, course_id: courseId })
+    await enrollInCourse(courseId)
     router.refresh()
     setLoading(false)
   }

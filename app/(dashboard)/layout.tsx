@@ -37,6 +37,7 @@ export default async function DashboardLayout({
         name={profile.name}
         email={profile.email}
         avatarUrl={profile.avatar_url}
+        userId={profile.id}
       />
 
       <main

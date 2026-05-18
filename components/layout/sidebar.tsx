@@ -16,6 +16,7 @@ import {
   User,
 } from 'lucide-react'
 import type { Role } from '@/types/database'
+import { NotificationBell } from './notification-bell'
 
 interface NavItem {
   href: string
@@ -40,9 +41,10 @@ interface SidebarProps {
   name: string
   email: string
   avatarUrl?: string | null
+  userId: string
 }
 
-export function Sidebar({ role, name, email, avatarUrl }: SidebarProps) {
+export function Sidebar({ role, name, email, avatarUrl, userId }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -63,10 +65,11 @@ export function Sidebar({ role, name, email, avatarUrl }: SidebarProps) {
       aria-label="Navegação principal"
     >
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-[var(--border)]">
+      <div className="px-5 py-5 border-b border-[var(--border)] flex items-center justify-between">
         <span className="text-lg font-black tracking-tight text-[var(--green)]">
           learn·studio
         </span>
+        <NotificationBell userId={userId} />
       </div>
 
       {/* Nav */}

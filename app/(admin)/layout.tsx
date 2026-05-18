@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <Sidebar role={profile.role} name={profile.name} email={profile.email} avatarUrl={profile.avatar_url} />
+      <Sidebar role={profile.role} name={profile.name} email={profile.email} avatarUrl={profile.avatar_url} userId={profile.id} />
       <main className="md:ml-[var(--sidebar-w)] pb-20 md:pb-0 min-h-screen">
         {children}
       </main>
