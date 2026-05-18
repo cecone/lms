@@ -391,21 +391,41 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
       const files     = Object.keys(zip.files).filter(n => !zip.files[n].dir)
       const basePath  = `scorm/${lesson.id}/`
 
-      // Descobre o arquivo de launch pelo imsmanifest.xml
-      let launchFile = 'index.html'
+      // Descobre o arquivo de launch
+      let launchFile = ''
+
+      // 1) Tenta ler o imsmanifest.xml via regex (evita problemas de namespace com DOMParser)
       const manifestPath = files.find(f => f.toLowerCase().endsWith('imsmanifest.xml'))
       if (manifestPath) {
         const text = await zip.files[manifestPath].async('string')
-        const doc  = new DOMParser().parseFromString(text, 'text/xml')
-        const href = doc.querySelector('resource[href]')?.getAttribute('href')
-        if (href) launchFile = href.split('?')[0].split('#')[0]
-      } else {
+        // Primeiro: resource com scormtype="sco" (Articulate, iSpring, etc.)
+        const scoMatch =
+          text.match(/adlcp:scormtype\s*=\s*["']sco["'][^>]*?\bhref\s*=\s*["']([^"'?#\s]+)/i) ||
+          text.match(/\bhref\s*=\s*["']([^"'?#\s]+)["'][^>]*?adlcp:scormtype\s*=\s*["']sco["']/i)
+        if (scoMatch) {
+          launchFile = scoMatch[1]
+        } else {
+          // Fallback: primeiro <resource com href
+          const anyMatch = text.match(/<resource\b[^>]+\bhref\s*=\s*["']([^"'?#\s]+)["']/i)
+          if (anyMatch) launchFile = anyMatch[1]
+        }
+      }
+
+      // 2) Verifica se o arquivo encontrado realmente existe no ZIP
+      const existsInZip = (name: string) =>
+        files.some(f => f.toLowerCase() === name.toLowerCase() ||
+                        f.toLowerCase().endsWith('/' + name.toLowerCase()))
+
+      // 3) Se o manifest não ajudou ou o arquivo não existe, tenta candidatos conhecidos
+      if (!launchFile || !existsInZip(launchFile)) {
         const candidates = ['story_html5.html','story.html','index_lms.html','index.html','launch.html']
         for (const c of candidates) {
           const found = files.find(f => f.toLowerCase() === c || f.toLowerCase().endsWith('/' + c))
           if (found) { launchFile = found; break }
         }
       }
+
+      if (!launchFile) launchFile = 'index.html'
 
       // Faz upload de todos os arquivos extraídos para o Supabase Storage
       const BATCH = 10

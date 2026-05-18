@@ -30,7 +30,14 @@ export async function GET(
     .download(filePath)
 
   if (error || !data) {
-    return new NextResponse('Not found', { status: 404 })
+    return new NextResponse(
+      `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;background:#111;color:#f87171">
+        <h2>SCORM: arquivo não encontrado</h2>
+        <p>Caminho: <code>${filePath}</code></p>
+        <p>Re-faça o upload do pacote SCORM no Studio para corrigir.</p>
+      </body></html>`,
+      { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    )
   }
 
   // Para arquivos HTML: injeta <base> apontando para o Supabase Storage
