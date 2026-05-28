@@ -15,12 +15,10 @@ function mime(filename: string) {
   return MIME[filename.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream'
 }
 
-// Nomes de HTML que authoring tools usam como placeholder vazio
 const BLANK_NAMES = new Set(['blank.html', 'blank.htm', 'empty.html', 'placeholder.html'])
 
 type FileEntry = { path: string; size: number }
 
-// Lista recursivamente todos os arquivos em um prefixo do Storage.
 async function listAllFiles(
   supabase: Awaited<ReturnType<typeof createClient>>,
   bucket: string,
@@ -44,68 +42,83 @@ async function listAllFiles(
   return results
 }
 
-// Escolhe o melhor arquivo HTML de launch dentre todos os arquivos da aula.
-// Prioridade: candidatos conhecidos > maior HTML > qualquer HTML.
-// Exclui nomes de placeholder apenas quando há alternativa.
-function pickBestHtml(files: FileEntry[], lessonId: string): string | null {
+function pickBestHtml(files: FileEntry[], lessonPrefix: string): string | null {
   const htmlFiles = files.filter(f => /\.html?$/i.test(f.path))
   if (htmlFiles.length === 0) return null
 
-  const PREFERRED = ['story_html5.html','story.html','index_lms.html','index.html','launch.html','main.html']
+  const PREFERRED = ['story_html5.html', 'story.html', 'index_lms.html', 'index.html', 'launch.html', 'main.html']
 
-  // 1. candidatos preferidos por nome (maior primeiro se empatar)
   for (const name of PREFERRED) {
     const found = htmlFiles
       .filter(f => f.path.split('/').pop()?.toLowerCase() === name)
       .sort((a, b) => b.size - a.size)[0]
-    if (found) return found.path.replace(new RegExp(`^scorm/${lessonId}/`), '')
+    if (found) return found.path
   }
 
-  // 2. maior HTML que não seja placeholder
   const nonBlank = htmlFiles.filter(f => !BLANK_NAMES.has(f.path.split('/').pop()?.toLowerCase() ?? ''))
   const best = (nonBlank.length > 0 ? nonBlank : htmlFiles).sort((a, b) => b.size - a.size)[0]
-  return best ? best.path.replace(new RegExp(`^scorm/${lessonId}/`), '') : null
+  return best ? best.path : null
+}
+
+// Calcula o <base href> correto para um HTML armazenado em `storagePath`.
+// Ex: storagePath = "scorm/{id}/content/blank.html"
+//     → baseUrl   = "/api/scorm/{id}/content/"
+// Assim todos os paths relativos do HTML resolvem para o diretório correto.
+function baseUrlForPath(lessonId: string, storagePath: string): string {
+  // Remove o prefixo "scorm/{id}/" para obter o path relativo à aula
+  const relative = storagePath.replace(`scorm/${lessonId}/`, '')
+  const dir = relative.includes('/') ? relative.substring(0, relative.lastIndexOf('/') + 1) : ''
+  return `/api/scorm/${lessonId}/${dir}`
+}
+
+function serveHtml(html: string, baseUrl: string): NextResponse {
+  const withoutBase = html.replace(/<base[^>]*>/gi, '')
+  const baseTag     = `<base href="${baseUrl}">`
+  let modified = withoutBase.includes('<head>')
+    ? withoutBase.replace('<head>', `<head>${baseTag}`)
+    : withoutBase.includes('<HEAD>')
+      ? withoutBase.replace('<HEAD>', `<HEAD>${baseTag}`)
+      : baseTag + withoutBase
+  return new NextResponse(modified, {
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  })
 }
 
 export async function GET(
   _req: Request,
   { params }: { params: { lessonId: string; path: string[] } }
 ) {
-  const supabase    = await createClient()
-  const filePath    = `scorm/${params.lessonId}/${params.path.join('/')}`
-  const filename    = params.path[params.path.length - 1]
-  const contentType = mime(filename)
-  const isHtml      = /\.html?$/i.test(filename)
+  const supabase     = await createClient()
+  const filePath     = `scorm/${params.lessonId}/${params.path.join('/')}`
+  const filename     = params.path[params.path.length - 1]
+  const contentType  = mime(filename)
+  const isHtml       = /\.html?$/i.test(filename)
 
-  let { data, error } = await supabase.storage
-    .from('course-content')
-    .download(filePath)
+  let { data, error } = await supabase.storage.from('course-content').download(filePath)
 
-  // Para HTML: se não encontrado OU se é um placeholder vazio, busca o melhor launch.
+  // Arquivo HTML não encontrado ou é um placeholder → busca o melhor launch
   if (isHtml && (error || !data || BLANK_NAMES.has(filename.toLowerCase()))) {
-    const allFiles = await listAllFiles(supabase, 'course-content', `scorm/${params.lessonId}`)
-
-    // Se o arquivo foi encontrado mas é um placeholder, verifica se é realmente pequeno
     let isReallyBlank = !!(error || !data)
+
     if (data && !error && BLANK_NAMES.has(filename.toLowerCase())) {
       const text = await data.text()
       isReallyBlank = text.replace(/<[^>]*>/g, '').trim().length < 50
       if (!isReallyBlank) {
-        // blank.html tem conteúdo real — serve normalmente
-        return serveHtml(text, params.lessonId)
+        // blank.html tem conteúdo real — serve com base correta para o diretório do arquivo
+        return serveHtml(text, baseUrlForPath(params.lessonId, filePath))
       }
     }
 
     if (isReallyBlank) {
-      const bestPath = pickBestHtml(allFiles, params.lessonId)
+      const allFiles  = await listAllFiles(supabase, 'course-content', `scorm/${params.lessonId}`)
+      const bestPath  = pickBestHtml(allFiles, `scorm/${params.lessonId}`)
       if (bestPath) {
-        console.log(`[scorm-proxy] redirect blank → ${bestPath}`)
-        const res = await supabase.storage
-          .from('course-content')
-          .download(`scorm/${params.lessonId}/${bestPath}`)
+        console.log(`[scorm-proxy] fallback: ${filePath} → ${bestPath}`)
+        const res = await supabase.storage.from('course-content').download(bestPath)
         if (res.data && !res.error) {
           const html = await res.data.text()
-          return serveHtml(html, params.lessonId)
+          // <base> aponta para o DIRETÓRIO do arquivo real encontrado
+          return serveHtml(html, baseUrlForPath(params.lessonId, bestPath))
         }
       }
     }
@@ -129,7 +142,7 @@ export async function GET(
 
   if (isHtml) {
     const html = await data.text()
-    return serveHtml(html, params.lessonId)
+    return serveHtml(html, baseUrlForPath(params.lessonId, filePath))
   }
 
   return new NextResponse(data, {
@@ -138,23 +151,4 @@ export async function GET(
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   })
-}
-
-function serveHtml(html: string, lessonId: string): NextResponse {
-  const baseUrl  = `/api/scorm/${lessonId}/`
-  const modified = injectBase(html, baseUrl)
-  return new NextResponse(modified, {
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-store',
-    },
-  })
-}
-
-function injectBase(html: string, baseUrl: string): string {
-  const withoutBase = html.replace(/<base[^>]*>/gi, '')
-  const baseTag = `<base href="${baseUrl}">`
-  if (withoutBase.includes('<head>')) return withoutBase.replace('<head>', `<head>${baseTag}`)
-  if (withoutBase.includes('<HEAD>')) return withoutBase.replace('<HEAD>', `<HEAD>${baseTag}`)
-  return baseTag + withoutBase
 }
