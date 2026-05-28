@@ -394,11 +394,23 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
       // Descobre o arquivo de launch
       let launchFile = ''
 
-      // Nomes de placeholder que alguns authoring tools (iSeazy, Lectora) declaram
-      // no manifest como SCO mas são arquivos em branco — devem ser ignorados.
-      const PLACEHOLDER_NAMES = ['blank.html', 'blank.htm', 'empty.html', 'placeholder.html']
-      const isPlaceholder = (name: string) =>
-        PLACEHOLDER_NAMES.includes(name.split('/').pop()?.toLowerCase() ?? '')
+      // Resolve o href do manifest para o caminho COMPLETO dentro do ZIP.
+      // Problema: manifest diz href="blank.html" mas o arquivo está em
+      // "content/blank.html" → o upload fica em scorm/{id}/content/blank.html
+      // mas a URL seria /api/scorm/{id}/blank.html → 404.
+      // Esta função devolve o caminho real (ex: "content/blank.html").
+      const resolveInZip = (href: string): string | null => {
+        const lower = href.toLowerCase()
+        // 1. Correspondência exata
+        const exact = files.find(f => f.toLowerCase() === lower)
+        if (exact) return exact
+        // 2. Arquivo em alguma subpasta (href sem pasta, arquivo com pasta)
+        const byName = files.find(f => f.toLowerCase().endsWith('/' + lower))
+        if (byName) return byName
+        // 3. href já inclui subpasta parcial: compara o sufixo completo
+        const bySuffix = files.find(f => f.toLowerCase().endsWith(lower))
+        return bySuffix ?? null
+      }
 
       // 1) Tenta ler o imsmanifest.xml via regex (evita problemas de namespace com DOMParser)
       const manifestPath = files.find(f => f.toLowerCase().endsWith('imsmanifest.xml'))
@@ -408,28 +420,24 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
         const scoMatch =
           text.match(/adlcp:scormtype\s*=\s*["']sco["'][^>]*?\bhref\s*=\s*["']([^"'?#\s]+)/i) ||
           text.match(/\bhref\s*=\s*["']([^"'?#\s]+)["'][^>]*?adlcp:scormtype\s*=\s*["']sco["']/i)
-        if (scoMatch && !isPlaceholder(scoMatch[1])) {
-          launchFile = scoMatch[1]
+        if (scoMatch) {
+          launchFile = resolveInZip(scoMatch[1]) ?? scoMatch[1]
         } else {
-          // Fallback: todos os <resource com href, ignorando placeholders
+          // Fallback: primeiro <resource com href que exista no ZIP
           const reRes = /<resource\b[^>]+\bhref\s*=\s*["']([^"'?#\s]+)["']/gi
           let mRes: RegExpExecArray | null
           while ((mRes = reRes.exec(text)) !== null) {
-            if (!isPlaceholder(mRes[1])) { launchFile = mRes[1]; break }
+            const resolved = resolveInZip(mRes[1])
+            if (resolved) { launchFile = resolved; break }
           }
         }
       }
 
-      // 2) Verifica se o arquivo encontrado realmente existe no ZIP
-      const existsInZip = (name: string) =>
-        files.some(f => f.toLowerCase() === name.toLowerCase() ||
-                        f.toLowerCase().endsWith('/' + name.toLowerCase()))
-
-      // 3) Se o manifest não ajudou ou o arquivo não existe, tenta candidatos conhecidos
-      if (!launchFile || !existsInZip(launchFile)) {
-        const candidates = ['story_html5.html','story.html','index_lms.html','index.html','launch.html']
+      // 2) Se o manifest não ajudou, tenta candidatos conhecidos pelo caminho completo
+      if (!launchFile) {
+        const candidates = ['story_html5.html','story.html','index_lms.html','index.html','launch.html','blank.html']
         for (const c of candidates) {
-          const found = files.find(f => f.toLowerCase() === c || f.toLowerCase().endsWith('/' + c))
+          const found = resolveInZip(c)
           if (found) { launchFile = found; break }
         }
       }
