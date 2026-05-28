@@ -445,14 +445,33 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
       if (!launchFile) launchFile = 'index.html'
 
       // Faz upload de todos os arquivos extraídos para o Supabase Storage
+      const uploadErrors: string[] = []
       const BATCH = 10
       for (let i = 0; i < files.length; i += BATCH) {
         await Promise.all(files.slice(i, i + BATCH).map(async (path) => {
           const blob = await zip.files[path].async('blob')
-          await supabase.storage
+          const { error: upErr } = await supabase.storage
             .from('course-content')
             .upload(basePath + path, blob, { upsert: true, contentType: scormMime(path) })
+          if (upErr) uploadErrors.push(`${path}: ${upErr.message}`)
         }))
+      }
+
+      if (uploadErrors.length > 0) {
+        console.error('SCORM upload errors:', uploadErrors)
+        throw new Error(`Falha no upload de ${uploadErrors.length} arquivo(s):\n${uploadErrors.slice(0, 5).join('\n')}`)
+      }
+
+      // Verifica se o arquivo de launch foi realmente armazenado
+      const { error: verifyErr } = await supabase.storage
+        .from('course-content')
+        .download(basePath + launchFile)
+      if (verifyErr) {
+        throw new Error(
+          `Arquivo de launch não encontrado após upload: ${basePath + launchFile}\n` +
+          `Erro Supabase: ${verifyErr.message}\n\n` +
+          `Arquivos no ZIP: ${files.slice(0, 10).join(', ')}`
+        )
       }
 
       // content_url aponta para a rota proxy do Next.js (mesmo domínio)
