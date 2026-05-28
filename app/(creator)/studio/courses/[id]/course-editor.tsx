@@ -476,8 +476,12 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
 
       // content_url aponta para a rota proxy do Next.js (mesmo domínio)
       const proxyUrl = `/api/scorm/${lesson.id}/${launchFile}`
+
+      // Persiste imediatamente no banco sem exigir clique em Salvar
+      await updateLesson(lesson.id, courseId, { ...form, content_url: proxyUrl })
       setForm(f => ({ ...f, content_url: proxyUrl }))
       setUploadDone(true)
+      onRefresh()
     } catch (err) {
       alert(`Erro no upload: ${err instanceof Error ? err.message : 'desconhecido'}`)
     }
