@@ -13,6 +13,16 @@ interface ScormPlayerProps {
 export function ScormPlayer({ url, onComplete, completed }: ScormPlayerProps) {
   const doneRef = useRef(completed ?? false)
   const [done, setDone] = useState(completed ?? false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  // Escuta erros reportados pelo proxy SCORM via postMessage
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.data?.type === 'scorm_error') setLoadError(e.data.message ?? 'Arquivo não encontrado')
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
 
   // Expõe a API SCORM no window do React (parent do iframe)
   // O iframe é servido pelo mesmo domínio (/api/scorm/...) → window.parent acessível
@@ -81,6 +91,24 @@ export function ScormPlayer({ url, onComplete, completed }: ScormPlayerProps) {
       delete (window as any).API_1484_11
     }
   }, [onComplete])
+
+  if (loadError) {
+    return (
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)]">
+          <span className="text-xs text-[var(--muted)] uppercase tracking-wide">SCORM</span>
+        </div>
+        <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center" style={{ minHeight: '40vh' }}>
+          <span className="text-3xl">⚠️</span>
+          <p className="text-sm font-medium text-red-400">Conteúdo SCORM não encontrado</p>
+          <p className="text-xs text-[var(--muted)] max-w-sm">
+            O pacote não foi enviado corretamente. Solicite ao administrador que refaça o upload no Studio.
+          </p>
+          <code className="text-xs text-[var(--muted)] bg-black/20 px-2 py-1 rounded break-all">{loadError}</code>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">

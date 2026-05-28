@@ -394,6 +394,12 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
       // Descobre o arquivo de launch
       let launchFile = ''
 
+      // Nomes de placeholder que alguns authoring tools (iSeazy, Lectora) declaram
+      // no manifest como SCO mas são arquivos em branco — devem ser ignorados.
+      const PLACEHOLDER_NAMES = ['blank.html', 'blank.htm', 'empty.html', 'placeholder.html']
+      const isPlaceholder = (name: string) =>
+        PLACEHOLDER_NAMES.includes(name.split('/').pop()?.toLowerCase() ?? '')
+
       // 1) Tenta ler o imsmanifest.xml via regex (evita problemas de namespace com DOMParser)
       const manifestPath = files.find(f => f.toLowerCase().endsWith('imsmanifest.xml'))
       if (manifestPath) {
@@ -402,12 +408,14 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
         const scoMatch =
           text.match(/adlcp:scormtype\s*=\s*["']sco["'][^>]*?\bhref\s*=\s*["']([^"'?#\s]+)/i) ||
           text.match(/\bhref\s*=\s*["']([^"'?#\s]+)["'][^>]*?adlcp:scormtype\s*=\s*["']sco["']/i)
-        if (scoMatch) {
+        if (scoMatch && !isPlaceholder(scoMatch[1])) {
           launchFile = scoMatch[1]
         } else {
-          // Fallback: primeiro <resource com href
-          const anyMatch = text.match(/<resource\b[^>]+\bhref\s*=\s*["']([^"'?#\s]+)["']/i)
-          if (anyMatch) launchFile = anyMatch[1]
+          // Fallback: todos os <resource com href, ignorando placeholders
+          const allMatches = [...text.matchAll(/<resource\b[^>]+\bhref\s*=\s*["']([^"'?#\s]+)["']/gi)]
+          for (const m of allMatches) {
+            if (!isPlaceholder(m[1])) { launchFile = m[1]; break }
+          }
         }
       }
 

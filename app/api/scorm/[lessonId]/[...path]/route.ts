@@ -31,10 +31,11 @@ export async function GET(
 
   if (error || !data) {
     return new NextResponse(
-      `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;background:#111;color:#f87171">
+      `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;padding:2rem;background:#111;color:#f87171">
         <h2>SCORM: arquivo não encontrado</h2>
         <p>Caminho: <code>${filePath}</code></p>
         <p>Re-faça o upload do pacote SCORM no Studio para corrigir.</p>
+        <script>try{window.parent.postMessage({type:'scorm_error',message:'Arquivo não encontrado: ${filePath}'},'*')}catch(e){}</script>
       </body></html>`,
       { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
     )
