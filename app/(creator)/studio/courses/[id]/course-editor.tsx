@@ -412,6 +412,16 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
         return bySuffix ?? null
       }
 
+      // Nomes de placeholder que authoring tools usam como SCO mas que são vazios
+      const BLANK_NAMES = new Set(['blank.html','blank.htm','empty.html','placeholder.html'])
+      const isBlankName = (p: string) => BLANK_NAMES.has(p.split('/').pop()?.toLowerCase() ?? '')
+
+      // Retorna o tamanho aproximado de um arquivo HTML no ZIP (em bytes)
+      const htmlSize = async (path: string) => {
+        try { return (await zip.files[path].async('string')).replace(/<[^>]*>/g, '').trim().length }
+        catch { return 0 }
+      }
+
       // 1) Tenta ler o imsmanifest.xml via regex (evita problemas de namespace com DOMParser)
       const manifestPath = files.find(f => f.toLowerCase().endsWith('imsmanifest.xml'))
       if (manifestPath) {
@@ -421,25 +431,40 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
           text.match(/adlcp:scormtype\s*=\s*["']sco["'][^>]*?\bhref\s*=\s*["']([^"'?#\s]+)/i) ||
           text.match(/\bhref\s*=\s*["']([^"'?#\s]+)["'][^>]*?adlcp:scormtype\s*=\s*["']sco["']/i)
         if (scoMatch) {
-          launchFile = resolveInZip(scoMatch[1]) ?? scoMatch[1]
-        } else {
-          // Fallback: primeiro <resource com href que exista no ZIP
+          const resolved = resolveInZip(scoMatch[1]) ?? scoMatch[1]
+          // Só usa se o arquivo tem conteúdo real (> 50 chars fora das tags)
+          if (!isBlankName(resolved) || await htmlSize(resolved) > 50) {
+            launchFile = resolved
+          }
+        }
+        if (!launchFile) {
+          // Fallback: primeiro <resource com href que exista no ZIP e não seja vazio
           const reRes = /<resource\b[^>]+\bhref\s*=\s*["']([^"'?#\s]+)["']/gi
           let mRes: RegExpExecArray | null
           while ((mRes = reRes.exec(text)) !== null) {
             const resolved = resolveInZip(mRes[1])
-            if (resolved) { launchFile = resolved; break }
+            if (resolved && (!isBlankName(resolved) || await htmlSize(resolved) > 50)) {
+              launchFile = resolved; break
+            }
           }
         }
       }
 
       // 2) Se o manifest não ajudou, tenta candidatos conhecidos pelo caminho completo
       if (!launchFile) {
-        const candidates = ['story_html5.html','story.html','index_lms.html','index.html','launch.html','blank.html']
-        for (const c of candidates) {
+        const preferred = ['story_html5.html','story.html','index_lms.html','index.html','launch.html','main.html']
+        for (const c of preferred) {
           const found = resolveInZip(c)
           if (found) { launchFile = found; break }
         }
+      }
+
+      // 3) Último recurso: maior HTML do ZIP que não seja placeholder
+      if (!launchFile) {
+        const htmlFiles = files.filter(f => /\.html?$/i.test(f))
+        const sized = await Promise.all(htmlFiles.map(async f => ({ f, sz: await htmlSize(f) })))
+        const best = sized.filter(x => x.sz > 50).sort((a, b) => b.sz - a.sz)[0]
+        if (best) launchFile = best.f
       }
 
       if (!launchFile) launchFile = 'index.html'

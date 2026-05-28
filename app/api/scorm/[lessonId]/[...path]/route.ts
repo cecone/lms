@@ -15,29 +15,56 @@ function mime(filename: string) {
   return MIME[filename.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream'
 }
 
-// Lista recursivamente todos os arquivos em scorm/{lessonId}/ no Storage.
-// Supabase list() não é recursivo: precisa listar cada subpasta manualmente.
+// Nomes de HTML que authoring tools usam como placeholder vazio
+const BLANK_NAMES = new Set(['blank.html', 'blank.htm', 'empty.html', 'placeholder.html'])
+
+type FileEntry = { path: string; size: number }
+
+// Lista recursivamente todos os arquivos em um prefixo do Storage.
 async function listAllFiles(
   supabase: Awaited<ReturnType<typeof createClient>>,
   bucket: string,
   prefix: string,
   depth = 0
-): Promise<string[]> {
+): Promise<FileEntry[]> {
   if (depth > 6) return []
   const { data, error } = await supabase.storage.from(bucket).list(prefix, { limit: 500 })
   if (error || !data) return []
 
-  const results: string[] = []
+  const results: FileEntry[] = []
   await Promise.all(data.map(async (item) => {
     if (item.id === null) {
-      // é uma pasta — lista recursivamente
       const sub = await listAllFiles(supabase, bucket, `${prefix}/${item.name}`, depth + 1)
       results.push(...sub)
     } else {
-      results.push(`${prefix}/${item.name}`)
+      const size = (item.metadata as any)?.size ?? 0
+      results.push({ path: `${prefix}/${item.name}`, size })
     }
   }))
   return results
+}
+
+// Escolhe o melhor arquivo HTML de launch dentre todos os arquivos da aula.
+// Prioridade: candidatos conhecidos > maior HTML > qualquer HTML.
+// Exclui nomes de placeholder apenas quando há alternativa.
+function pickBestHtml(files: FileEntry[], lessonId: string): string | null {
+  const htmlFiles = files.filter(f => /\.html?$/i.test(f.path))
+  if (htmlFiles.length === 0) return null
+
+  const PREFERRED = ['story_html5.html','story.html','index_lms.html','index.html','launch.html','main.html']
+
+  // 1. candidatos preferidos por nome (maior primeiro se empatar)
+  for (const name of PREFERRED) {
+    const found = htmlFiles
+      .filter(f => f.path.split('/').pop()?.toLowerCase() === name)
+      .sort((a, b) => b.size - a.size)[0]
+    if (found) return found.path.replace(new RegExp(`^scorm/${lessonId}/`), '')
+  }
+
+  // 2. maior HTML que não seja placeholder
+  const nonBlank = htmlFiles.filter(f => !BLANK_NAMES.has(f.path.split('/').pop()?.toLowerCase() ?? ''))
+  const best = (nonBlank.length > 0 ? nonBlank : htmlFiles).sort((a, b) => b.size - a.size)[0]
+  return best ? best.path.replace(new RegExp(`^scorm/${lessonId}/`), '') : null
 }
 
 export async function GET(
@@ -54,34 +81,32 @@ export async function GET(
     .from('course-content')
     .download(filePath)
 
-  // Arquivo não encontrado no caminho exato: busca pelo nome em toda a pasta da aula.
-  // Isso resolve pacotes onde o manifest aponta para "blank.html" mas o arquivo
-  // foi armazenado em "content/blank.html" ou outra subpasta.
-  if ((error || !data) && isHtml) {
+  // Para HTML: se não encontrado OU se é um placeholder vazio, busca o melhor launch.
+  if (isHtml && (error || !data || BLANK_NAMES.has(filename.toLowerCase()))) {
     const allFiles = await listAllFiles(supabase, 'course-content', `scorm/${params.lessonId}`)
-    const match = allFiles.find(f =>
-      f.split('/').pop()?.toLowerCase() === filename.toLowerCase()
-    )
-    if (match) {
-      console.log(`[scorm-proxy] fallback: ${filePath} → ${match}`)
-      const res = await supabase.storage.from('course-content').download(match)
-      data  = res.data
-      error = res.error
-      // Redireciona a URL canônica para o caminho correto (corrige próximas requisições)
-      if (data && !error) {
-        const correctPath = match.replace(/^scorm\/[^/]+\//, '')
-        const redirectUrl = `/api/scorm/${params.lessonId}/${correctPath}`
-        const html = await data.text()
-        const baseUrl = `/api/scorm/${params.lessonId}/`
-        const modified = injectBase(html, baseUrl)
-        // Inclui header para que o player atualize a URL salva no banco
-        return new NextResponse(modified, {
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'no-store',
-            'X-Scorm-Correct-Path': redirectUrl,
-          },
-        })
+
+    // Se o arquivo foi encontrado mas é um placeholder, verifica se é realmente pequeno
+    let isReallyBlank = !!(error || !data)
+    if (data && !error && BLANK_NAMES.has(filename.toLowerCase())) {
+      const text = await data.text()
+      isReallyBlank = text.replace(/<[^>]*>/g, '').trim().length < 50
+      if (!isReallyBlank) {
+        // blank.html tem conteúdo real — serve normalmente
+        return serveHtml(text, params.lessonId)
+      }
+    }
+
+    if (isReallyBlank) {
+      const bestPath = pickBestHtml(allFiles, params.lessonId)
+      if (bestPath) {
+        console.log(`[scorm-proxy] redirect blank → ${bestPath}`)
+        const res = await supabase.storage
+          .from('course-content')
+          .download(`scorm/${params.lessonId}/${bestPath}`)
+        if (res.data && !res.error) {
+          const html = await res.data.text()
+          return serveHtml(html, params.lessonId)
+        }
       }
     }
   }
@@ -102,23 +127,26 @@ export async function GET(
     )
   }
 
-  // Para arquivos HTML: injeta <base> apontando para o proxy (mesmo domínio).
   if (isHtml) {
-    const html     = await data.text()
-    const baseUrl  = `/api/scorm/${params.lessonId}/`
-    const modified = injectBase(html, baseUrl)
-    return new NextResponse(modified, {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store',
-      },
-    })
+    const html = await data.text()
+    return serveHtml(html, params.lessonId)
   }
 
   return new NextResponse(data, {
     headers: {
       'Content-Type': contentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  })
+}
+
+function serveHtml(html: string, lessonId: string): NextResponse {
+  const baseUrl  = `/api/scorm/${lessonId}/`
+  const modified = injectBase(html, baseUrl)
+  return new NextResponse(modified, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
     },
   })
 }
