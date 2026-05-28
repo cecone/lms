@@ -412,9 +412,10 @@ function LessonRow({ lesson, moduleId, courseId, isFirst, isLast, onRefresh }: {
           launchFile = scoMatch[1]
         } else {
           // Fallback: todos os <resource com href, ignorando placeholders
-          const allMatches = [...text.matchAll(/<resource\b[^>]+\bhref\s*=\s*["']([^"'?#\s]+)["']/gi)]
-          for (const m of allMatches) {
-            if (!isPlaceholder(m[1])) { launchFile = m[1]; break }
+          const reRes = /<resource\b[^>]+\bhref\s*=\s*["']([^"'?#\s]+)["']/gi
+          let mRes: RegExpExecArray | null
+          while ((mRes = reRes.exec(text)) !== null) {
+            if (!isPlaceholder(mRes[1])) { launchFile = mRes[1]; break }
           }
         }
       }
