@@ -7,6 +7,9 @@ export default async function AchievementsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Atualiza badges retroativos sempre que o usuário abre esta página
+  await supabase.rpc('check_and_award_badges', { p_user_id: user.id })
+
   const { data: userBadges } = await supabase
     .from('user_badges')
     .select('*, badge:badges(*)')
