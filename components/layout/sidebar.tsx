@@ -34,6 +34,7 @@ const navItems: NavItem[] = [
   { href: '/studio',       label: 'Studio',        icon: <PenSquare size={18} />, roles: ['professor', 'coordenador', 'admin'] },
   { href: '/reports',      label: 'Relatórios',    icon: <GraduationCap size={18} />, roles: ['coordenador', 'admin'] },
   { href: '/admin',        label: 'Administração', icon: <ShieldCheck size={18} />, roles: ['admin'] },
+  { href: '/admin/badges', label: 'Badges',        icon: <Trophy size={18} />,     roles: ['admin'] },
 ]
 
 interface SidebarProps {
