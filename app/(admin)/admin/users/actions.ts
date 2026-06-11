@@ -130,3 +130,90 @@ export async function setUserActive(input: {
     return { ok: false, error: e instanceof Error ? e.message : 'Erro inesperado.' }
   }
 }
+
+export async function resetUserPassword(input: {
+  id: string
+  password: string
+}): Promise<ActionResult> {
+  try {
+    await requireAdmin()
+    if (input.password.length < 6) return { ok: false, error: 'A senha precisa ter ao menos 6 caracteres.' }
+
+    const admin = createAdminClient()
+    const { error } = await admin.auth.admin.updateUserById(input.id, { password: input.password })
+    if (error) return { ok: false, error: error.message }
+
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erro inesperado.' }
+  }
+}
+
+export type AdminUserRow = {
+  id: string
+  name: string
+  email: string
+  role: Role
+  avatar_url: string | null
+  is_active: boolean
+  created_at: string
+  total_xp: number
+  level: number
+}
+
+type ListResult =
+  | { ok: true; users: AdminUserRow[]; total: number }
+  | { ok: false; error: string }
+
+export async function listUsers(input: {
+  query?: string
+  role?: Role | 'all'
+  status?: 'all' | 'active' | 'inactive'
+  offset?: number
+  limit?: number
+}): Promise<ListResult> {
+  try {
+    await requireAdmin()
+    const admin = createAdminClient()
+
+    const limit = input.limit ?? 20
+    const offset = input.offset ?? 0
+
+    let q = admin
+      .from('profiles')
+      .select(
+        'id, name, email, role, avatar_url, is_active, created_at, user_xp(total_xp, level)',
+        { count: 'exact' },
+      )
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    const term = (input.query ?? '').trim().replace(/[%,()*]/g, ' ').trim()
+    if (term) q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%`)
+    if (input.role && input.role !== 'all') q = q.eq('role', input.role)
+    if (input.status && input.status !== 'all') q = q.eq('is_active', input.status === 'active')
+
+    const { data, error, count } = await q
+    if (error) return { ok: false, error: error.message }
+
+    const users: AdminUserRow[] = (data ?? []).map((u: Record<string, unknown>) => {
+      const raw = u.user_xp as { total_xp: number; level: number } | { total_xp: number; level: number }[] | null
+      const xp = Array.isArray(raw) ? raw[0] : raw
+      return {
+        id: u.id as string,
+        name: u.name as string,
+        email: u.email as string,
+        role: u.role as Role,
+        avatar_url: (u.avatar_url as string | null) ?? null,
+        is_active: u.is_active as boolean,
+        created_at: u.created_at as string,
+        total_xp: xp?.total_xp ?? 0,
+        level: xp?.level ?? 1,
+      }
+    })
+
+    return { ok: true, users, total: count ?? 0 }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Erro inesperado.' }
+  }
+}

@@ -1,18 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { Users } from 'lucide-react'
 import { UsersManager } from './users-manager'
-import type { Profile } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
 export default async function UsersAdminPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, name, email, role, avatar_url, is_active, created_at')
-    .order('created_at', { ascending: false })
 
   const serviceKeyConfigured = !!process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -34,10 +28,7 @@ export default async function UsersAdminPage() {
         </div>
       )}
 
-      <UsersManager
-        initialUsers={(profiles ?? []) as Profile[]}
-        currentUserId={user?.id ?? ''}
-      />
+      <UsersManager currentUserId={user?.id ?? ''} />
     </div>
   )
 }
