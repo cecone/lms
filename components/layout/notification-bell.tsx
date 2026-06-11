@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Bell, CheckCheck, BookOpen, Users, MessageSquare, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
@@ -38,7 +38,7 @@ export function NotificationBell({ userId }: { userId: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const unread = notifications.filter((n) => !n.read).length
 
@@ -51,7 +51,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       .order('created_at', { ascending: false })
       .limit(30)
       .then(({ data }) => setNotifications(data ?? []))
-  }, [userId])
+  }, [userId, supabase])
 
   // Realtime subscription
   useEffect(() => {
@@ -67,7 +67,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [userId])
+  }, [userId, supabase])
 
   // Close on outside click
   useEffect(() => {

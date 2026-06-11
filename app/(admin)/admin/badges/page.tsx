@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Trophy, Trash2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -33,22 +33,22 @@ const BLANK: Omit<Badge, 'id'> = {
 }
 
 export default function BadgesAdminPage() {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [badges, setBadges]   = useState<Badge[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [form, setForm]       = useState<Omit<Badge, 'id'>>(BLANK)
   const [pending, start]      = useTransition()
 
-  async function load() {
+  const load = useCallback(async () => {
     const [{ data: b }, { data: c }] = await Promise.all([
       supabase.from('badges').select('*').order('trigger_type').order('trigger_value'),
       supabase.from('courses').select('id, title').eq('status', 'published').order('title'),
     ])
     setBadges((b ?? []) as Badge[])
     setCourses((c ?? []) as Course[])
-  }
+  }, [supabase])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
 
   function handleCreate() {
     if (!form.name.trim()) return
@@ -168,7 +168,10 @@ export default function BadgesAdminPage() {
         {badges.map(b => (
           <div key={b.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-[var(--amber)]/15 flex items-center justify-center text-lg flex-shrink-0">
-              {b.icon_url ? <img src={b.icon_url} alt="" className="w-7 h-7 object-contain" /> : '🏆'}
+              {b.icon_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={b.icon_url} alt="" className="w-7 h-7 object-contain" />
+              ) : '🏆'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[var(--text)]">{b.name}</p>

@@ -145,6 +145,7 @@ export function CoursesCatalog({ courses }: { courses: Course[] }) {
                 style={{ backgroundColor: course.accent_color + '22', color: course.accent_color }}
               >
                 {course.thumbnail_url
+                  // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={course.thumbnail_url} alt="" className="w-full h-full object-cover" />
                   : course.title[0]
                 }

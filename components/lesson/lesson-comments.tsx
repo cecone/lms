@@ -33,6 +33,7 @@ function relativeDate(iso: string) {
 }
 
 function Avatar({ name, url }: { name: string; url: string | null }) {
+  // eslint-disable-next-line @next/next/no-img-element
   if (url) return <img src={url} alt={name} className="w-8 h-8 rounded-full object-cover shrink-0" />
   return (
     <div className="w-8 h-8 rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-bold text-[var(--green)] shrink-0">

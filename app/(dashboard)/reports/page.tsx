@@ -68,6 +68,7 @@ function ProgressBar({ value, max, color = 'var(--green)' }: { value: number; ma
 
 function Avatar({ name, url, size = 8 }: { name: string; url: string | null; size?: number }) {
   const cls = `w-${size} h-${size} rounded-full object-cover`
+  // eslint-disable-next-line @next/next/no-img-element
   if (url) return <img src={url} alt={name} className={cls} />
   return (
     <div className={`w-${size} h-${size} rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-bold text-[var(--green)] shrink-0`}>

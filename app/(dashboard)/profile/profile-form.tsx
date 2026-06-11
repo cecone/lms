@@ -76,6 +76,7 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
           {/* Avatar */}
           <div className="relative shrink-0">
             {avatarSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={avatarSrc}
                 alt={profile.name}

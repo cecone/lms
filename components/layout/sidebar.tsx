@@ -107,6 +107,7 @@ export function Sidebar({ role, name, email, avatarUrl, userId }: SidebarProps) 
       <div className="p-4 border-t border-[var(--border)] space-y-2">
         <div className="flex items-center gap-3">
           {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarUrl}
               alt=""

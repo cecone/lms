@@ -44,6 +44,7 @@ export default async function AchievementsPage() {
             >
               <div className="w-14 h-14 rounded-full bg-[var(--amber)]/15 flex items-center justify-center text-2xl">
                 {ub.badge?.icon_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={ub.badge.icon_url} alt="" className="w-10 h-10 object-contain" />
                 ) : '🏆'}
               </div>

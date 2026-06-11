@@ -102,6 +102,7 @@ export default async function DashboardHome() {
                     style={{ backgroundColor: enrollment.course.accent_color + '22', color: enrollment.course.accent_color }}
                   >
                     {enrollment.course.thumbnail_url
+                      // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={enrollment.course.thumbnail_url} alt="" className="w-full h-full object-cover rounded-lg" />
                       : enrollment.course.title[0]
                     }
