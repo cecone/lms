@@ -19,6 +19,44 @@ function ContentIcon({ type }: { type: string }) {
   return <Icon size={13} />
 }
 
+interface ReviewOption {
+  id: string
+  text: string
+}
+
+interface ReviewQuestion {
+  id: string
+  text: string
+  correct_option_id: string
+  explanation?: string | null
+  options: ReviewOption[]
+}
+
+interface ReviewQuiz {
+  lesson_id: string
+  questions: ReviewQuestion[]
+  passing_score: number
+  max_attempts: number
+}
+
+interface ReviewLesson {
+  id: string
+  title: string
+  description?: string | null
+  content_type: string
+  content_url?: string | null
+  duration_seconds?: number | null
+  is_free_preview?: boolean
+  order: number
+}
+
+interface ReviewModule {
+  id: string
+  title: string
+  order: number
+  lessons: ReviewLesson[]
+}
+
 export default async function ReviewPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -42,8 +80,9 @@ export default async function ReviewPage({ params }: { params: { id: string } })
     .order('order', { referencedTable: 'lessons' })
 
   // Quiz data para aulas do tipo quiz
-  const allLessons = (modules ?? []).flatMap((m: any) => m.lessons ?? [])
-  const quizLessonIds = allLessons.filter((l: any) => l.content_type === 'quiz').map((l: any) => l.id)
+  const typedModules = (modules ?? []) as ReviewModule[]
+  const allLessons = typedModules.flatMap((m) => m.lessons ?? [])
+  const quizLessonIds = allLessons.filter((l) => l.content_type === 'quiz').map((l) => l.id)
 
   const { data: quizzes } = quizLessonIds.length
     ? await supabase
@@ -52,7 +91,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
         .in('lesson_id', quizLessonIds)
     : { data: [] }
 
-  const quizMap = new Map((quizzes ?? []).map((q: any) => [q.lesson_id, q]))
+  const quizMap = new Map(((quizzes ?? []) as ReviewQuiz[]).map((q) => [q.lesson_id, q]))
 
   const creator = course.creator as { name: string; email: string } | null
   const totalLessons = allLessons.length
@@ -125,7 +164,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
             Nenhum módulo cadastrado.
           </div>
         ) : (
-          (modules as any[]).map((mod) => (
+          typedModules.map((mod) => (
             <div key={mod.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden">
               {/* Module header */}
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
@@ -140,7 +179,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
                 {(mod.lessons ?? []).length === 0 && (
                   <p className="text-xs text-[var(--muted)] px-4 py-3">Sem aulas.</p>
                 )}
-                {(mod.lessons as any[]).map((lesson) => {
+                {(mod.lessons ?? []).map((lesson) => {
                   const quiz = quizMap.get(lesson.id)
                   return (
                     <div key={lesson.id} className="px-4 py-3 space-y-2">
@@ -193,17 +232,17 @@ export default async function ReviewPage({ params }: { params: { id: string } })
                             <div className="border border-[var(--border)] rounded-lg overflow-hidden">
                               <div className="px-3 py-2 bg-[var(--bg)] border-b border-[var(--border)] flex items-center justify-between">
                                 <span className="text-[10px] text-[var(--muted)]">
-                                  {(quiz.questions as any[]).length} pergunta{(quiz.questions as any[]).length !== 1 ? 's' : ''} · mín. {quiz.passing_score}% · {quiz.max_attempts} tentativa{quiz.max_attempts !== 1 ? 's' : ''}
+                                  {quiz.questions.length} pergunta{quiz.questions.length !== 1 ? 's' : ''} · mín. {quiz.passing_score}% · {quiz.max_attempts} tentativa{quiz.max_attempts !== 1 ? 's' : ''}
                                 </span>
                               </div>
                               <div className="divide-y divide-[var(--border)]">
-                                {(quiz.questions as any[]).map((q: any, idx: number) => (
+                                {quiz.questions.map((q, idx) => (
                                   <div key={q.id} className="px-3 py-2.5">
                                     <p className="text-xs text-[var(--text)] mb-1.5">
                                       <span className="text-[var(--muted)] mr-1">{idx + 1}.</span>{q.text}
                                     </p>
                                     <ul className="space-y-1 ml-3">
-                                      {(q.options as any[]).map((opt: any) => (
+                                      {q.options.map((opt) => (
                                         <li
                                           key={opt.id}
                                           className={cn(

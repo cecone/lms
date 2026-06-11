@@ -123,7 +123,7 @@ export function CoursesCatalog({ courses }: { courses: Course[] }) {
       {filtered.length === 0 ? (
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-16 text-center">
           <BookOpen size={36} className="mx-auto mb-3 text-[var(--muted)] opacity-40" />
-          <p className="text-[var(--muted)] text-sm">Nenhum curso encontrado para "{query}"</p>
+          <p className="text-[var(--muted)] text-sm">Nenhum curso encontrado para &ldquo;{query}&rdquo;</p>
           <button
             onClick={() => { setQuery(''); setTrail('all') }}
             className="mt-3 text-xs text-[var(--green)] hover:underline"

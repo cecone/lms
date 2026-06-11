@@ -35,14 +35,14 @@ async function listAllFiles(
       const sub = await listAllFiles(supabase, bucket, `${prefix}/${item.name}`, depth + 1)
       results.push(...sub)
     } else {
-      const size = (item.metadata as any)?.size ?? 0
+      const size = (item.metadata as { size?: number } | null)?.size ?? 0
       results.push({ path: `${prefix}/${item.name}`, size })
     }
   }))
   return results
 }
 
-function pickBestHtml(files: FileEntry[], lessonPrefix: string): string | null {
+function pickBestHtml(files: FileEntry[]): string | null {
   const htmlFiles = files.filter(f => /\.html?$/i.test(f.path))
   if (htmlFiles.length === 0) return null
 
@@ -74,7 +74,7 @@ function baseUrlForPath(lessonId: string, storagePath: string): string {
 function serveHtml(html: string, baseUrl: string): NextResponse {
   const withoutBase = html.replace(/<base[^>]*>/gi, '')
   const baseTag     = `<base href="${baseUrl}">`
-  let modified = withoutBase.includes('<head>')
+  const modified = withoutBase.includes('<head>')
     ? withoutBase.replace('<head>', `<head>${baseTag}`)
     : withoutBase.includes('<HEAD>')
       ? withoutBase.replace('<HEAD>', `<HEAD>${baseTag}`)
@@ -94,7 +94,7 @@ export async function GET(
   const contentType  = mime(filename)
   const isHtml       = /\.html?$/i.test(filename)
 
-  let { data, error } = await supabase.storage.from('course-content').download(filePath)
+  const { data, error } = await supabase.storage.from('course-content').download(filePath)
 
   // Arquivo HTML não encontrado ou é um placeholder → busca o melhor launch
   if (isHtml && (error || !data || BLANK_NAMES.has(filename.toLowerCase()))) {
@@ -111,7 +111,7 @@ export async function GET(
 
     if (isReallyBlank) {
       const allFiles  = await listAllFiles(supabase, 'course-content', `scorm/${params.lessonId}`)
-      const bestPath  = pickBestHtml(allFiles, `scorm/${params.lessonId}`)
+      const bestPath  = pickBestHtml(allFiles)
       if (bestPath) {
         console.log(`[scorm-proxy] fallback: ${filePath} → ${bestPath}`)
         const res = await supabase.storage.from('course-content').download(bestPath)
@@ -126,7 +126,8 @@ export async function GET(
 
   if (error || !data) {
     const errMsg  = error?.message ?? 'sem dados retornados'
-    const errCode = (error as any)?.statusCode ?? (error as any)?.status ?? '?'
+    const errInfo = error as { statusCode?: number | string; status?: number | string } | null
+    const errCode = errInfo?.statusCode ?? errInfo?.status ?? '?'
     console.error(`[scorm-proxy] 404 filePath=${filePath} status=${errCode} msg=${errMsg}`)
     return new NextResponse(
       `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;padding:2rem;background:#111;color:#f87171">

@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 
+interface QuizQuestion {
+  id: string
+  correct_option_id: string
+  explanation?: string | null
+}
+
 export interface SubmitResult {
   score: number
   passed: boolean
@@ -39,7 +45,7 @@ export async function submitQuizAttempt(
     throw new Error('Limite de tentativas atingido')
   }
 
-  const questions = quiz.questions as any[]
+  const questions = quiz.questions as QuizQuestion[]
   let correct = 0
   const correctAnswers: Record<string, string> = {}
   const explanations: Record<string, string | null> = {}

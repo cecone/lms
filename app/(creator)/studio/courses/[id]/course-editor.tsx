@@ -249,7 +249,7 @@ export function CourseEditor({ course, modules }: { course: Course; modules: Mod
 
         {modules.length === 0 ? (
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-10 text-center text-sm text-[var(--muted)]">
-            Nenhum módulo ainda. Clique em "+ Módulo" para começar.
+            Nenhum módulo ainda. Clique em &ldquo;+ Módulo&rdquo; para começar.
           </div>
         ) : (
           <div className="space-y-3">

@@ -4,6 +4,15 @@ import { useEffect, useRef, useState } from 'react'
 import { CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+type ScormApi = Record<string, (...args: string[]) => string>
+
+declare global {
+  interface Window {
+    API?: ScormApi
+    API_1484_11?: ScormApi
+  }
+}
+
 interface ScormPlayerProps {
   url: string
   onComplete: () => void
@@ -35,7 +44,7 @@ export function ScormPlayer({ url, onComplete, completed }: ScormPlayerProps) {
     }
 
     // SCORM 1.2
-    ;(window as any).API = {
+    window.API = {
       LMSInitialize:     () => 'true',
       LMSFinish:         () => { handleComplete(); return 'true' },
       LMSGetValue:       (e: string) => {
@@ -63,7 +72,7 @@ export function ScormPlayer({ url, onComplete, completed }: ScormPlayerProps) {
     }
 
     // SCORM 2004
-    ;(window as any).API_1484_11 = {
+    window.API_1484_11 = {
       Initialize: () => 'true',
       Terminate:  () => { handleComplete(); return 'true' },
       GetValue:   (e: string) => {
@@ -87,8 +96,8 @@ export function ScormPlayer({ url, onComplete, completed }: ScormPlayerProps) {
     }
 
     return () => {
-      delete (window as any).API
-      delete (window as any).API_1484_11
+      delete window.API
+      delete window.API_1484_11
     }
   }, [onComplete])
 

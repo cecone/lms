@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Camera, Save, X, Zap, Flame, BookOpen, CheckCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 const ROLE_LABEL: Record<string, string> = {
   aluno: 'Aluno', professor: 'Professor',
