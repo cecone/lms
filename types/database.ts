@@ -13,6 +13,7 @@ export interface Profile {
   avatar_url: string | null
   bio: string | null
   is_active: boolean
+  onboarded: boolean
   created_at: string
   updated_at: string
 }
@@ -136,7 +137,7 @@ export interface CertificateSettings {
 
 export interface Badge {
   id: string
-  course_id: string
+  course_id: string | null
   name: string
   description: string
   icon_url: string | null

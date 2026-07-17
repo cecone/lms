@@ -69,7 +69,7 @@ export default async function DashboardHome() {
   ]
 
   const firstName = profile?.name?.split(' ')[0] ?? ''
-  const onboarded = (profile as unknown as { onboarded?: boolean })?.onboarded ?? true
+  const onboarded = profile?.onboarded ?? true
 
   return (
     <div className="p-6 md:p-10 max-w-4xl">
