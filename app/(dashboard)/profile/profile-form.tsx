@@ -16,6 +16,10 @@ const ROLE_VARIANT: Record<string, 'muted' | 'green' | 'blue' | 'amber'> = {
   aluno: 'muted', professor: 'blue', coordenador: 'amber', admin: 'green',
 }
 
+const focusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green)] ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]'
+
 interface Props {
   profile: { id: string; name: string; email: string; bio: string | null; avatar_url: string | null; role: string }
   xp: { total_xp: number; level: number; streak_days: number } | null
@@ -68,6 +72,13 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
   const initials = profile.name.slice(0, 2).toUpperCase()
   const avatarSrc = editing ? form.avatar_url : profile.avatar_url
 
+  const stats = [
+    { label: 'XP Total', value: (xp?.total_xp ?? 0).toLocaleString('pt-BR'), icon: <Zap size={16} className="text-[var(--amber)]" aria-hidden /> },
+    { label: 'Nível', value: xp?.level ?? 1, icon: <div className="w-4 h-4 rounded-full bg-[var(--green)]/20 flex items-center justify-center text-[8px] font-medium text-[var(--green)]">Lv</div> },
+    { label: 'Streak', value: `${xp?.streak_days ?? 0}d`, icon: <Flame size={16} className="text-orange-400" aria-hidden /> },
+    { label: 'Cursos', value: enrolledCount, icon: <BookOpen size={16} className="text-[var(--blue)]" aria-hidden /> },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Card principal */}
@@ -83,7 +94,7 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
                 className="w-20 h-20 rounded-full object-cover border-2 border-[var(--border)]"
               />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-[var(--green)]/20 flex items-center justify-center text-2xl font-bold text-[var(--green)] border-2 border-[var(--border)]">
+              <div className="w-20 h-20 rounded-full bg-[var(--green)]/20 flex items-center justify-center text-2xl font-medium text-[var(--green)] border-2 border-[var(--border)]">
                 {initials}
               </div>
             )}
@@ -93,9 +104,10 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                  aria-label="Trocar foto"
+                  className={`absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 focus-visible:opacity-100 transition-opacity ${focusRing}`}
                 >
-                  <Camera size={18} className="text-white" />
+                  <Camera size={18} className="text-white" aria-hidden />
                 </button>
                 <input
                   ref={fileRef}
@@ -137,7 +149,7 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
               <>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg font-bold text-[var(--text)]">{profile.name}</h2>
+                    <h2 className="text-lg font-medium text-[var(--text)]">{profile.name}</h2>
                     <Badge variant={ROLE_VARIANT[profile.role] ?? 'muted'}>
                       {ROLE_LABEL[profile.role] ?? profile.role}
                     </Badge>
@@ -150,7 +162,7 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
               </>
             )}
 
-            {/* Actions */}
+            {/* Ações */}
             <div className="flex gap-2 pt-1">
               {editing ? (
                 <>
@@ -171,33 +183,12 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — superfície quieta, sem borda */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          {
-            label: 'XP Total',
-            value: (xp?.total_xp ?? 0).toLocaleString('pt-BR'),
-            icon: <Zap size={16} className="text-[var(--amber)]" />,
-          },
-          {
-            label: 'Nível',
-            value: xp?.level ?? 1,
-            icon: <div className="w-4 h-4 rounded-full bg-[var(--green)]/20 flex items-center justify-center text-[8px] font-bold text-[var(--green)]">Lv</div>,
-          },
-          {
-            label: 'Streak',
-            value: `${xp?.streak_days ?? 0}d`,
-            icon: <Flame size={16} className="text-orange-400" />,
-          },
-          {
-            label: 'Cursos',
-            value: enrolledCount,
-            icon: <BookOpen size={16} className="text-[var(--blue)]" />,
-          },
-        ].map(({ label, value, icon }) => (
-          <div key={label} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex flex-col gap-2">
+        {stats.map(({ label, value, icon }) => (
+          <div key={label} className="bg-[var(--surface)] rounded-xl p-4 flex flex-col gap-2">
             {icon}
-            <p className="text-2xl font-bold text-[var(--text)]">{value}</p>
+            <p className="text-2xl font-semibold tabular-nums text-[var(--text)] leading-none">{value}</p>
             <p className="text-xs text-[var(--muted)]">{label}</p>
           </div>
         ))}
@@ -206,11 +197,11 @@ export function ProfileForm({ profile, xp, enrolledCount, completedCount, supaba
       {/* Progresso */}
       <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-[var(--text)] flex items-center gap-2">
-            <CheckCircle size={15} className="text-[var(--green)]" />
+          <h3 className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
+            <CheckCircle size={15} className="text-[var(--green)]" aria-hidden />
             Aulas concluídas
           </h3>
-          <span className="text-2xl font-bold text-[var(--text)]">{completedCount}</span>
+          <span className="text-2xl font-semibold tabular-nums text-[var(--text)]">{completedCount}</span>
         </div>
         <p className="text-xs text-[var(--muted)]">
           Total de aulas que você completou na plataforma.
