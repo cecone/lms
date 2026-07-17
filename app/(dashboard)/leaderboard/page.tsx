@@ -32,7 +32,20 @@ function RankBadge({ position }: { position: number }) {
   )
 }
 
-function Avatar({ name, isMe }: { name: string; isMe: boolean }) {
+function Avatar({ name, url, isMe }: { name: string; url: string | null; isMe: boolean }) {
+  if (url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url}
+        alt=""
+        className={cn(
+          'w-8 h-8 rounded-full object-cover shrink-0',
+          isMe && 'ring-2 ring-[var(--green)]/40'
+        )}
+      />
+    )
+  }
   return (
     <div className={cn(
       'w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium shrink-0',
@@ -51,7 +64,11 @@ function Row({ entry, position, isMe }: { entry: XPEntry; position: number; isMe
     )}>
       <RankBadge position={position} />
 
-      <Avatar name={entry.profile?.name ?? '?'} isMe={isMe} />
+      <Avatar
+        name={entry.profile?.name ?? '?'}
+        url={entry.profile?.avatar_url ?? null}
+        isMe={isMe}
+      />
 
       <div className="flex-1 min-w-0">
         <p className={cn(
@@ -135,9 +152,7 @@ export default async function LeaderboardPage() {
       {/* Foco único — sua posição, quando fora do top 10 */}
       {myRank && !userInTop10 && (
         <div className="mb-6 flex items-center gap-4 px-5 py-4 rounded-2xl bg-[var(--green)]/10 border border-[var(--green)]/30">
-          <span
-            className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold tabular-nums shrink-0 bg-[var(--green)]/20 text-[var(--green)]"
-          >
+          <span className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold tabular-nums shrink-0 bg-[var(--green)]/20 text-[var(--green)]">
             #{myRank}
           </span>
           <div className="flex-1 min-w-0">
