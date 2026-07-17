@@ -57,9 +57,9 @@ export default async function AchievementsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Atualiza badges retroativos ao abrir a página
-  await supabase.rpc('check_and_award_badges', { p_user_id: user.id })
-
+  // Nota: não chamamos check_and_award_badges aqui. Ele já roda no banco ao
+  // final de add_xp (aulas/quizzes) e de maybe_issue_certificate (conclusão de
+  // curso), então esta página é somente leitura.
   const [{ data: allBadges }, { data: earnedRaw }, { data: coursesRaw }] = await Promise.all([
     supabase
       .from('badges')
