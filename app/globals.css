@@ -6,15 +6,17 @@
   --font-jakarta: 'Plus Jakarta Sans', system-ui, sans-serif;
 
   /* learn·studio design tokens */
-  --bg:        #080808;
-  --surface:   #111111;
-  --border:    #222222;
-  --text:      #F0F0F0;
-  --muted:     #888888;
-  --green:     #4ADE80;
-  --blue:      #7EB8F7;
-  --amber:     #FBBF24;
-  --red:       #F87171;
+  --bg:            #0A0C10;
+  --surface:       #15181E;  /* agora perceptível sobre o bg */
+  --raised:        #1D2128;  /* modais, dropdowns, popovers */
+  --border:        #2C313A;
+  --border-strong: #3A4049;  /* hover de card / divisória forte */
+  --text:          #EDEFF2;
+  --muted:         #9BA1AC;
+  --green:         #34D399;
+  --blue:          #7EB8F7;
+  --amber:         #FBBF24;
+  --red:           #F87171;
 
   --sidebar-w: 280px;
   --radius:    8px;
