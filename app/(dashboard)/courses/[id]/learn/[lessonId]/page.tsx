@@ -9,6 +9,10 @@ import { ArrowLeft, ArrowRight, CheckCircle, Circle, Lock, ChevronDown } from 'l
 import { cn } from '@/lib/utils'
 import type { ContentType, LessonStatus } from '@/types/database'
 
+const focusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green)] ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] rounded'
+
 interface PageProps {
   params: { id: string; lessonId: string }
 }
@@ -114,24 +118,24 @@ export default async function LearnPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-0 min-h-0">
-      {/* Main content */}
-      <div className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 space-y-6 min-w-0 overflow-x-hidden">
+      {/* Conteúdo principal */}
+      <div className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 space-y-6 overflow-x-hidden">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
+        <div className="flex items-center gap-2 text-sm text-[var(--muted)] min-w-0">
           <Link
             href={`/courses/${courseId}`}
-            className="flex items-center gap-1 hover:text-[var(--text)] transition-colors"
+            className={cn('flex items-center gap-1 hover:text-[var(--text)] transition-colors shrink-0', focusRing)}
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft size={14} aria-hidden />
             {course?.title ?? 'Curso'}
           </Link>
-          <span>/</span>
+          <span aria-hidden>/</span>
           <span className="text-[var(--text)] font-medium truncate">{lesson.title}</span>
         </div>
 
-        {/* Lesson title */}
+        {/* Título da aula */}
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-[var(--text)] tracking-tight">
+          <h1 className="text-xl md:text-2xl font-semibold text-[var(--text)] tracking-tight">
             {lesson.title}
           </h1>
           {lesson.description && (
@@ -160,14 +164,14 @@ export default async function LearnPage({ params }: PageProps) {
           initialComments={(commentsRaw ?? []) as any}
         />
 
-        {/* Prev / Next navigation */}
+        {/* Navegação anterior / próxima */}
         <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
           {prevLesson ? (
             <Link
               href={`/courses/${courseId}/learn/${prevLesson.id}`}
-              className="flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+              className={cn('flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors', focusRing)}
             >
-              <ArrowLeft size={15} />
+              <ArrowLeft size={15} aria-hidden />
               <span className="hidden sm:inline truncate max-w-[160px]">{prevLesson.title}</span>
               <span className="sm:hidden">Anterior</span>
             </Link>
@@ -178,45 +182,41 @@ export default async function LearnPage({ params }: PageProps) {
           {nextLesson && !nextLesson.locked ? (
             <Link
               href={`/courses/${courseId}/learn/${nextLesson.id}`}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--green)] hover:opacity-80 transition-opacity"
+              className={cn('flex items-center gap-2 text-sm font-medium text-[var(--green)] hover:opacity-80 transition-opacity', focusRing)}
             >
               <span className="hidden sm:inline truncate max-w-[160px]">{nextLesson.title}</span>
               <span className="sm:hidden">Próxima</span>
-              <ArrowRight size={15} />
+              <ArrowRight size={15} aria-hidden />
             </Link>
           ) : nextLesson?.locked ? (
             <span className="flex items-center gap-2 text-sm text-[var(--muted)] opacity-50">
-              <Lock size={13} />
+              <Lock size={13} aria-hidden />
               Bloqueada
             </span>
           ) : (
             <Link
               href={`/courses/${courseId}`}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--blue)] hover:opacity-80 transition-opacity"
+              className={cn('flex items-center gap-2 text-sm font-medium text-[var(--blue)] hover:opacity-80 transition-opacity', focusRing)}
             >
               Ver curso
-              <ArrowRight size={15} />
+              <ArrowRight size={15} aria-hidden />
             </Link>
           )}
         </div>
       </div>
 
-      {/* Sidebar — lesson list */}
+      {/* Sidebar — lista de aulas */}
       <LessonSidebarDrawer>
         <div className="p-4 border-b border-[var(--border)] hidden lg:block">
-          <h2 className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">
-            Conteúdo do curso
-          </h2>
+          <h2 className="text-sm font-medium text-[var(--text)]">Conteúdo do curso</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-[var(--border)]">
           {(modules ?? []).map((mod: any) => (
             <details key={mod.id} open>
               <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-white/5 list-none">
-                <span className="text-xs font-semibold text-[var(--text)] uppercase tracking-wide">
-                  {mod.title}
-                </span>
-                <ChevronDown size={14} className="text-[var(--muted)]" />
+                <span className="text-xs font-medium text-[var(--text)]">{mod.title}</span>
+                <ChevronDown size={14} className="text-[var(--muted)]" aria-hidden />
               </summary>
 
               <ul className="pb-1">
@@ -230,23 +230,25 @@ export default async function LearnPage({ params }: PageProps) {
                     <li key={l.id}>
                       {lessonLocked ? (
                         <div className="flex items-center gap-3 px-4 py-2.5 opacity-40 cursor-not-allowed">
-                          <Lock size={13} className="shrink-0 text-[var(--muted)]" />
+                          <Lock size={13} className="shrink-0 text-[var(--muted)]" aria-hidden />
                           <span className="text-xs text-[var(--muted)] truncate">{l.title}</span>
                         </div>
                       ) : (
                         <Link
                           href={`/courses/${courseId}/learn/${l.id}`}
+                          aria-current={isCurrentLesson ? 'page' : undefined}
                           className={cn(
                             'flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/5',
+                            focusRing,
                             isCurrentLesson && 'bg-[var(--green)]/10 border-l-2 border-[var(--green)]'
                           )}
                         >
                           {lessonStatus === 'completed' ? (
-                            <CheckCircle size={13} className="shrink-0 text-[var(--green)]" />
+                            <CheckCircle size={13} className="shrink-0 text-[var(--green)]" aria-hidden />
                           ) : lessonStatus === 'in_progress' ? (
-                            <div className="w-3.5 h-3.5 rounded-full border-2 border-[var(--blue)] shrink-0 animate-pulse" />
+                            <div className="w-3.5 h-3.5 rounded-full border-2 border-[var(--blue)] shrink-0 animate-pulse" aria-hidden />
                           ) : (
-                            <Circle size={13} className="shrink-0 text-[var(--muted)]" />
+                            <Circle size={13} className="shrink-0 text-[var(--muted)]" aria-hidden />
                           )}
                           <span
                             className={cn(
@@ -257,8 +259,8 @@ export default async function LearnPage({ params }: PageProps) {
                             {l.title}
                           </span>
                           {l.is_free_preview && !enrollment && (
-                            <span className="ml-auto text-[10px] text-[var(--green)] font-bold shrink-0">
-                              FREE
+                            <span className="ml-auto text-[10px] font-medium text-[var(--green)] bg-[var(--green)]/10 px-1.5 py-0.5 rounded shrink-0">
+                              Grátis
                             </span>
                           )}
                         </Link>
