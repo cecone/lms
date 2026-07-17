@@ -10,6 +10,17 @@ import { Clock, Users, PlayCircle, ArrowLeft, Award } from 'lucide-react'
 import { formatDuration } from '@/lib/utils'
 import type { LessonStatus, ContentType } from '@/types/database'
 
+const TRAIL_BADGE: Record<string, string> = {
+  linear: 'Linear',
+  livre: 'Livre',
+  nonlinear: 'Não linear',
+  adaptive: 'Adaptativa',
+}
+
+const focusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green)] ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] rounded'
+
 export default async function CourseDetailPage({
   params,
 }: {
@@ -118,23 +129,29 @@ export default async function CourseDetailPage({
 
   return (
     <div className="max-w-4xl p-6 md:p-10">
-      {/* Back */}
-      <Link href="/courses" className="inline-flex items-center gap-1.5 text-sm text-[var(--muted)] hover:text-[var(--text)] mb-6 transition-colors">
-        <ArrowLeft size={15} />
+      {/* Voltar */}
+      <Link
+        href="/courses"
+        className={`inline-flex items-center gap-1.5 text-sm text-[var(--muted)] hover:text-[var(--text)] mb-6 transition-colors ${focusRing}`}
+      >
+        <ArrowLeft size={15} aria-hidden />
         Todos os cursos
       </Link>
 
-      {/* Hero */}
+      {/* Hero — foco da tela, tingido com a cor do curso */}
       <div
         className="rounded-2xl p-8 mb-8 flex flex-col gap-4"
-        style={{ backgroundColor: course.accent_color + '18', borderColor: course.accent_color + '44', border: '1px solid' }}
+        style={{
+          backgroundColor: course.accent_color + '18',
+          border: `1px solid ${course.accent_color}44`,
+        }}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="green">{course.trail_type}</Badge>
-          {enrollment?.completed_at && <Badge variant="blue">Concluído</Badge>}
+          <Badge variant="muted">{TRAIL_BADGE[course.trail_type] ?? course.trail_type}</Badge>
+          {enrollment?.completed_at && <Badge variant="green">Concluído</Badge>}
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-black text-[var(--text)] tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-semibold text-[var(--text)] tracking-tight">
           {course.title}
         </h1>
 
@@ -148,20 +165,25 @@ export default async function CourseDetailPage({
         <div className="flex flex-wrap items-center gap-5 text-sm text-[var(--muted)]">
           {creator && (
             <span className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold">
-                {creator.name[0]}
-              </div>
+              {creator.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={creator.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+              ) : (
+                <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-medium">
+                  {creator.name[0]}
+                </span>
+              )}
               {creator.name}
             </span>
           )}
           {totalDuration > 0 && (
-            <span className="flex items-center gap-1">
-              <Clock size={13} />
+            <span className="flex items-center gap-1 tabular-nums">
+              <Clock size={13} aria-hidden />
               {formatDuration(totalDuration)}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Users size={13} />
+          <span className="flex items-center gap-1 tabular-nums">
+            <Users size={13} aria-hidden />
             {studentsCount ?? 0} alunos
           </span>
         </div>
@@ -169,13 +191,13 @@ export default async function CourseDetailPage({
         {/* Barra de progresso — só para matriculados */}
         {enrolled && totalLessons > 0 && (
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+            <div className="flex items-center justify-between text-xs text-[var(--muted)] tabular-nums">
               <span>{completedLessons} de {totalLessons} aulas concluídas</span>
               <span style={{ color: progressPct === 100 ? 'var(--green)' : undefined }}>
                 {progressPct}%
               </span>
             </div>
-            <div className="h-2 bg-black/20 rounded-full overflow-hidden">
+            <div className="h-2 bg-black/25 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all"
                 style={{
@@ -219,7 +241,7 @@ export default async function CourseDetailPage({
 
       {/* Módulos */}
       <section aria-labelledby="modules-heading">
-        <h2 id="modules-heading" className="text-base font-bold text-[var(--text)] mb-4">
+        <h2 id="modules-heading" className="text-base font-medium text-[var(--text)] mb-4">
           Conteúdo do curso
         </h2>
         <ModuleList
