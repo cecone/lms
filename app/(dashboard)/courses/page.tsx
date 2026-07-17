@@ -12,10 +12,14 @@ export default async function CoursesPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text)]">Explorar Cursos</h1>
-        <p className="text-[var(--muted)] mt-1 text-sm">Encontre o próximo curso para evoluir</p>
-      </div>
+      <header className="mb-6">
+        <h1 className="text-[26px] leading-tight font-medium tracking-tight text-[var(--text)]">
+          Explorar cursos
+        </h1>
+        <p className="text-[var(--muted)] mt-1 text-sm">
+          Encontre o próximo curso para evoluir
+        </p>
+      </header>
 
       <CoursesCatalog courses={(courses ?? []) as never} />
     </div>
