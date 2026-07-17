@@ -15,6 +15,7 @@ import {
   LogOut,
   User,
   Users,
+  Award,
 } from 'lucide-react'
 import type { Role } from '@/types/database'
 import { NotificationBell } from './notification-bell'
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { href: '/admin',        label: 'Administração', icon: <ShieldCheck size={18} />, roles: ['admin'] },
   { href: '/admin/users',  label: 'Usuários',      icon: <Users size={18} />,      roles: ['admin'] },
   { href: '/admin/badges', label: 'Badges',        icon: <Trophy size={18} />,     roles: ['admin'] },
+  { href: '/admin/certificate', label: 'Certificado', icon: <Award size={18} />,   roles: ['admin'] },
 ]
 
 interface SidebarProps {

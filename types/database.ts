@@ -118,6 +118,22 @@ export interface Certificate {
   user?: Profile
 }
 
+export interface CertificateSettings {
+  id: number
+  institution_name: string
+  logo_url: string | null
+  brand_color: string
+  title: string
+  intro_text: string
+  middle_text: string
+  footer_text: string | null
+  signature_name: string | null
+  signature_role: string | null
+  signature_image_url: string | null
+  verify_url_base: string
+  updated_at: string
+}
+
 export interface Badge {
   id: string
   course_id: string

@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { CheckCircle, XCircle, Award } from 'lucide-react'
 import Link from 'next/link'
+import { DEFAULT_CERTIFICATE_SETTINGS } from '@/lib/certificate-settings'
+import type { CertificateSettings } from '@/types/database'
 
 interface CertData {
   valid: boolean
@@ -13,11 +15,13 @@ interface CertData {
 export default async function VerifyPage({ params }: { params: { code: string } }) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase.rpc('verify_certificate', {
-    p_code: params.code.toUpperCase(),
-  })
+  const [{ data, error }, { data: settingsRow }] = await Promise.all([
+    supabase.rpc('verify_certificate', { p_code: params.code.toUpperCase() }),
+    supabase.from('certificate_settings').select('*').eq('id', 1).single<CertificateSettings>(),
+  ])
 
   const cert = (error ? { valid: false } : data) as CertData
+  const settings = settingsRow ?? DEFAULT_CERTIFICATE_SETTINGS
 
   const date = cert.issued_at
     ? new Date(cert.issued_at).toLocaleDateString('pt-BR', {
@@ -30,9 +34,16 @@ export default async function VerifyPage({ params }: { params: { code: string } 
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="text-xl font-black tracking-tight text-[var(--green)]">
-            learn·studio
-          </Link>
+          {settings.logo_url ? (
+            <Link href="/" className="inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={settings.logo_url} alt={settings.institution_name} className="h-10 object-contain mx-auto" />
+            </Link>
+          ) : (
+            <Link href="/" className="text-xl font-black tracking-tight text-[var(--green)]">
+              {settings.institution_name}
+            </Link>
+          )}
           <p className="text-xs text-[var(--muted)] mt-1">Verificação de certificado</p>
         </div>
 
