@@ -4,6 +4,10 @@ import { Button } from '@/components/ui/button'
 import { ShieldCheck, BookOpen, Clock, Users } from 'lucide-react'
 import Link from 'next/link'
 
+const focusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green)] ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]'
+
 export default async function AdminPage() {
   const supabase = await createClient()
 
@@ -17,26 +21,31 @@ export default async function AdminPage() {
     supabase.from('courses').select('*, creator:profiles(name)').eq('status', 'pending').limit(10),
   ])
 
+  const stats = [
+    { label: 'Usuários',           value: totalUsers ?? 0,            icon: Users,    color: 'var(--blue)' },
+    { label: 'Cursos publicados',  value: totalCourses ?? 0,          icon: BookOpen, color: 'var(--green)' },
+    { label: 'Aguardando revisão', value: pendingCourses?.length ?? 0, icon: Clock,    color: 'var(--amber)' },
+  ]
+
   return (
     <div className="p-6 md:p-10 max-w-5xl">
-      <div className="mb-8 flex items-center gap-3">
-        <ShieldCheck size={24} className="text-[var(--green)]" />
+      {/* Header */}
+      <header className="mb-8 flex items-center gap-3">
+        <ShieldCheck size={24} className="text-[var(--green)]" aria-hidden />
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text)]">Administração</h1>
+          <h1 className="text-[26px] leading-tight font-medium tracking-tight text-[var(--text)]">
+            Administração
+          </h1>
           <p className="text-[var(--muted)] text-sm">Visão geral da plataforma</p>
         </div>
-      </div>
+      </header>
 
-      {/* Stats */}
+      {/* Stats — superfície quieta, sem borda */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
-        {[
-          { label: 'Usuários',          value: totalUsers ?? 0,   icon: Users,    color: 'var(--blue)' },
-          { label: 'Cursos publicados', value: totalCourses ?? 0, icon: BookOpen, color: 'var(--green)' },
-          { label: 'Aguardando revisão', value: pendingCourses?.length ?? 0, icon: Clock, color: 'var(--amber)' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5">
-            <Icon size={18} style={{ color }} className="mb-3" />
-            <p className="text-3xl font-bold text-[var(--text)]">{value}</p>
+        {stats.map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="bg-[var(--surface)] rounded-xl p-5">
+            <Icon size={18} style={{ color }} className="mb-3" aria-hidden />
+            <p className="text-3xl font-semibold tabular-nums text-[var(--text)] leading-none">{value}</p>
             <p className="text-xs text-[var(--muted)] mt-1">{label}</p>
           </div>
         ))}
@@ -44,8 +53,8 @@ export default async function AdminPage() {
 
       {/* Cursos pendentes */}
       <section aria-labelledby="pending-heading">
-        <h2 id="pending-heading" className="text-base font-semibold text-[var(--text)] mb-4 flex items-center gap-2">
-          <Clock size={16} className="text-[var(--amber)]" />
+        <h2 id="pending-heading" className="text-base font-medium text-[var(--text)] mb-4 flex items-center gap-2">
+          <Clock size={16} className="text-[var(--amber)]" aria-hidden />
           Cursos aguardando aprovação
         </h2>
 
@@ -56,19 +65,25 @@ export default async function AdminPage() {
         ) : (
           <div className="space-y-3">
             {(pendingCourses as { id: string; title: string; accent_color: string; creator: { name: string } | null }[]).map((course) => (
-              <div key={course.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
+              <div
+                key={course.id}
+                className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4"
+              >
                 <div
-                  className="w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center font-bold"
+                  className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center text-lg font-medium"
                   style={{ backgroundColor: course.accent_color + '22', color: course.accent_color }}
                 >
                   {course.title[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-[var(--text)] truncate">{course.title}</p>
-                  <p className="text-xs text-[var(--muted)]">por {course.creator?.name}</p>
+                  <p className="font-medium text-sm text-[var(--text)] truncate">{course.title}</p>
+                  <p className="text-xs text-[var(--muted)] truncate">por {course.creator?.name ?? 'Autor'}</p>
                 </div>
                 <Badge variant="amber">Pendente</Badge>
-                <Link href={`/admin/courses/${course.id}/review`}>
+                <Link
+                  href={`/admin/courses/${course.id}/review`}
+                  className={`rounded-md shrink-0 ${focusRing}`}
+                >
                   <Button size="sm" variant="secondary">Revisar</Button>
                 </Link>
               </div>
