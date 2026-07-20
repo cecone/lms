@@ -67,11 +67,17 @@ function ProgressBar({ value, max, color = 'var(--green)' }: { value: number; ma
 }
 
 function Avatar({ name, url, size = 8 }: { name: string; url: string | null; size?: number }) {
-  const cls = `w-${size} h-${size} rounded-full object-cover`
+  // Tailwind faz scan estático das classes; `w-${size}` por template string nunca é
+  // gerada. Dimensão vai por style inline (unidade de spacing do Tailwind = 4px).
+  const px = size * 4
+  const dim = { width: px, height: px }
   // eslint-disable-next-line @next/next/no-img-element
-  if (url) return <img src={url} alt={name} className={cls} />
+  if (url) return <img src={url} alt={name} style={dim} className="rounded-full object-cover shrink-0" />
   return (
-    <div className={`w-${size} h-${size} rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-bold text-[var(--green)] shrink-0`}>
+    <div
+      style={dim}
+      className="rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-bold text-[var(--green)] shrink-0"
+    >
       {name.slice(0, 2).toUpperCase()}
     </div>
   )
