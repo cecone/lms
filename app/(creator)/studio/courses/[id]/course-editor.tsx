@@ -68,7 +68,6 @@ const ACCENT_COLORS = ['#4ADE80','#7EB8F7','#FBBF24','#F87171','#C084FC','#FB923
 const TRAIL_TYPES   = [
   { value: 'linear',    label: 'Linear' },
   { value: 'nonlinear', label: 'Livre' },
-  { value: 'adaptive',  label: 'Adaptativo' },
 ]
 const CONTENT_TYPES = [
   { value: 'video', label: 'Vídeo',  icon: Video },

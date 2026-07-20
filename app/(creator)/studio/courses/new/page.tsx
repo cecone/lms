@@ -20,7 +20,6 @@ const ACCENT_COLORS = [
 const TRAIL_TYPES = [
   { value: 'linear',    label: 'Linear — aulas desbloqueadas em sequência' },
   { value: 'nonlinear', label: 'Livre — aluno escolhe a ordem' },
-  { value: 'adaptive',  label: 'Adaptativo — baseado em desempenho' },
 ]
 
 export default function NewCoursePage() {
