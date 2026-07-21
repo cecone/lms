@@ -24,7 +24,12 @@ const ROLES = Object.keys(ROLE_META) as Role[]
 type StatusFilter = 'all' | 'active' | 'inactive'
 
 const inputClass =
-  'w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--green)]'
+  'w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] ' +
+  'focus:outline-none focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)]'
+
+const focusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green)] ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -86,7 +91,7 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" aria-hidden />
           <input
             className={`${inputClass} pl-9`}
             placeholder="Buscar por nome ou email…"
@@ -96,7 +101,7 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--text)]"
+              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-[var(--muted)] hover:text-[var(--text)] ${focusRing}`}
               aria-label="Limpar busca"
             >
               <X size={14} />
@@ -109,13 +114,13 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-2 mb-5 text-xs">
+      <div className="flex flex-wrap items-center gap-2 mb-5 text-xs">
         <FilterGroup
           options={[['all', 'Todos'], ...ROLES.map((r) => [r, ROLE_META[r].label] as [string, string])]}
           value={roleFilter}
           onChange={(v) => setRoleFilter(v as Role | 'all')}
         />
-        <span className="w-px bg-[var(--border)] mx-1" />
+        <span className="w-px h-5 bg-[var(--border)] mx-1" />
         <FilterGroup
           options={[['all', 'Todos'], ['active', 'Ativos'], ['inactive', 'Inativos']]}
           value={statusFilter}
@@ -123,12 +128,12 @@ export function UsersManager({ currentUserId }: { currentUserId: string }) {
         />
       </div>
 
-      <p className="text-xs text-[var(--muted)] mb-3">
+      <p className="text-xs text-[var(--muted)] mb-3 tabular-nums">
         {loading ? 'Carregando…' : `${total} ${total === 1 ? 'usuário' : 'usuários'}`}
       </p>
 
       {error && (
-        <div className="rounded-xl border border-[var(--red)]/30 bg-[var(--red)]/10 px-4 py-3 text-sm text-[var(--red)] mb-3">
+        <div role="alert" className="rounded-xl border border-[var(--red)]/30 bg-[var(--red)]/10 px-4 py-3 text-sm text-[var(--red)] mb-3">
           {error}
         </div>
       )}
@@ -191,12 +196,13 @@ function FilterGroup({
   onChange: (v: string) => void
 }) {
   return (
-    <div className="inline-flex flex-wrap gap-1">
+    <div className="inline-flex flex-wrap gap-1" role="group">
       {options.map(([v, label]) => (
         <button
           key={v}
           onClick={() => onChange(v)}
-          className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+          aria-pressed={value === v}
+          className={`px-2.5 py-1 rounded-md font-medium transition-colors ${focusRing} ${
             value === v
               ? 'bg-[var(--green)]/10 text-[var(--green)]'
               : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5'
@@ -234,26 +240,28 @@ function UserRow({
     })
   }
 
+  const actionBtn = `p-2 rounded-lg transition-colors ${focusRing}`
+
   return (
     <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 flex items-center gap-4">
       {user.avatar_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+        <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
       ) : (
-        <div className="w-9 h-9 rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-bold text-[var(--green)] flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-medium text-[var(--green)] shrink-0">
           {user.name.slice(0, 2).toUpperCase()}
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[var(--text)] truncate">
+        <p className="text-sm font-medium text-[var(--text)] truncate">
           {user.name}
           {isSelf && <span className="text-[var(--muted)] font-normal"> (você)</span>}
         </p>
         <p className="text-xs text-[var(--muted)] truncate">{user.email}</p>
         <div className="flex items-center gap-3 mt-1 text-[11px] text-[var(--muted)]">
-          <span>Desde {formatDate(user.created_at)}</span>
-          <span className="inline-flex items-center gap-1">
-            <Zap size={11} className="text-[var(--amber)]" />
+          <span className="tabular-nums">Desde {formatDate(user.created_at)}</span>
+          <span className="inline-flex items-center gap-1 tabular-nums">
+            <Zap size={11} className="text-[var(--amber)]" aria-hidden />
             {user.total_xp.toLocaleString('pt-BR')} XP · Nv {user.level}
           </span>
         </div>
@@ -261,17 +269,17 @@ function UserRow({
       </div>
       <Badge variant={meta.variant}>{meta.label}</Badge>
       {!user.is_active && <Badge variant="red">Inativo</Badge>}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={onEdit}
-          className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5 transition-colors"
+          className={`${actionBtn} text-[var(--muted)] hover:text-[var(--text)] hover:bg-white/5`}
           aria-label={`Editar ${user.name}`}
         >
           <Pencil size={15} />
         </button>
         <button
           onClick={onResetPassword}
-          className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--blue)] hover:bg-[var(--blue)]/10 transition-colors"
+          className={`${actionBtn} text-[var(--muted)] hover:text-[var(--blue)] hover:bg-[var(--blue)]/10`}
           aria-label={`Redefinir senha de ${user.name}`}
         >
           <KeyRound size={15} />
@@ -279,7 +287,7 @@ function UserRow({
         <button
           onClick={toggleActive}
           disabled={pending}
-          className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+          className={`${actionBtn} disabled:opacity-50 ${
             user.is_active
               ? 'text-[var(--muted)] hover:text-[var(--red)] hover:bg-[var(--red)]/10'
               : 'text-[var(--muted)] hover:text-[var(--green)] hover:bg-[var(--green)]/10'
@@ -294,15 +302,25 @@ function UserRow({
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  // Fecha no Esc
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-md bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        className="w-full max-w-md bg-[var(--surface)] border border-[var(--border-strong)] rounded-2xl p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-[var(--text)]">{title}</h2>
-          <button onClick={onClose} className="text-[var(--muted)] hover:text-[var(--text)]" aria-label="Fechar">
+          <h2 id="modal-title" className="text-base font-medium text-[var(--text)]">{title}</h2>
+          <button onClick={onClose} className={`p-1 rounded text-[var(--muted)] hover:text-[var(--text)] ${focusRing}`} aria-label="Fechar">
             <X size={18} />
           </button>
         </div>
@@ -342,7 +360,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     <Modal title="Novo usuário" onClose={onClose}>
       <div className="space-y-3">
         <Field label="Nome">
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Maria Silva" />
+          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Maria Silva" autoFocus />
         </Field>
         <Field label="Email">
           <input className={inputClass} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="maria@exemplo.com" />
@@ -391,7 +409,7 @@ function EditModal({
     <Modal title="Editar usuário" onClose={onClose}>
       <div className="space-y-3">
         <Field label="Nome">
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
+          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
         </Field>
         <Field label="Email">
           <input className={`${inputClass} opacity-60`} value={user.email} disabled />
@@ -437,7 +455,7 @@ function ResetPasswordModal({
     <Modal title="Redefinir senha" onClose={onClose}>
       <div className="space-y-3">
         <p className="text-sm text-[var(--muted)]">
-          Definir uma nova senha para <span className="text-[var(--text)] font-semibold">{user.name}</span> ({user.email}).
+          Definir uma nova senha para <span className="text-[var(--text)] font-medium">{user.name}</span> ({user.email}).
         </p>
         <Field label="Nova senha (mín. 6 caracteres)">
           <input
