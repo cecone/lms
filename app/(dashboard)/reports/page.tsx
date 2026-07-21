@@ -43,13 +43,13 @@ function StatCard({
   icon: React.ReactNode; accent: string
 }) {
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 flex flex-col gap-3">
+    <div className="bg-[var(--surface)] rounded-xl p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-[var(--muted)] font-medium uppercase tracking-wide">{label}</p>
+        <p className="text-xs text-[var(--muted)] font-medium">{label}</p>
         <div style={{ color: accent }}>{icon}</div>
       </div>
-      <p className="text-3xl font-bold text-[var(--text)]">{value}</p>
-      {sub && <p className="text-xs text-[var(--muted)]">{sub}</p>}
+      <p className="text-3xl font-semibold tabular-nums text-[var(--text)] leading-none">{value}</p>
+      {sub && <p className="text-xs text-[var(--muted)] tabular-nums">{sub}</p>}
     </div>
   )
 }
@@ -58,10 +58,10 @@ function ProgressBar({ value, max, color = 'var(--green)' }: { value: number; ma
   const pct = max === 0 ? 0 : Math.min(100, Math.round((value / max) * 100))
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="text-xs text-[var(--muted)] w-8 text-right">{pct}%</span>
+      <span className="text-xs text-[var(--muted)] w-8 text-right tabular-nums">{pct}%</span>
     </div>
   )
 }
@@ -72,11 +72,11 @@ function Avatar({ name, url, size = 8 }: { name: string; url: string | null; siz
   const px = size * 4
   const dim = { width: px, height: px }
   // eslint-disable-next-line @next/next/no-img-element
-  if (url) return <img src={url} alt={name} style={dim} className="rounded-full object-cover shrink-0" />
+  if (url) return <img src={url} alt="" style={dim} className="rounded-full object-cover shrink-0" />
   return (
     <div
       style={dim}
-      className="rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-bold text-[var(--green)] shrink-0"
+      className="rounded-full bg-[var(--green)]/20 flex items-center justify-center text-xs font-medium text-[var(--green)] shrink-0"
     >
       {name.slice(0, 2).toUpperCase()}
     </div>
@@ -116,33 +116,33 @@ export default async function ReportsPage() {
   return (
     <div className="p-6 md:p-10 max-w-6xl">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--text)] flex items-center gap-2">
-          <GraduationCap size={22} className="text-[var(--green)]" />
+      <header className="mb-8">
+        <h1 className="text-[26px] leading-tight font-medium tracking-tight text-[var(--text)] flex items-center gap-2">
+          <GraduationCap size={22} className="text-[var(--green)]" aria-hidden />
           Relatórios
         </h1>
         <p className="text-sm text-[var(--muted)] mt-1">Visão geral da plataforma</p>
-      </div>
+      </header>
 
-      {/* Overview */}
+      {/* Overview — superfície quieta, sem borda */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <StatCard label="Alunos" value={r.total_students} icon={<Users size={16} />} accent="var(--blue)" />
-        <StatCard label="Matrículas" value={r.total_enrollments} icon={<BookOpen size={16} />} accent="var(--amber)" />
+        <StatCard label="Alunos" value={r.total_students} icon={<Users size={16} aria-hidden />} accent="var(--blue)" />
+        <StatCard label="Matrículas" value={r.total_enrollments} icon={<BookOpen size={16} aria-hidden />} accent="var(--amber)" />
         <StatCard
           label="Taxa de conclusão"
           value={`${overallCompletionRate}%`}
           sub={`${r.total_completions} concluídos`}
-          icon={<TrendingUp size={16} />}
+          icon={<TrendingUp size={16} aria-hidden />}
           accent="var(--green)"
         />
-        <StatCard label="Cursos publicados" value={r.published_courses} icon={<Trophy size={16} />} accent="var(--muted)" />
+        <StatCard label="Cursos publicados" value={r.published_courses} icon={<Trophy size={16} aria-hidden />} accent="var(--muted)" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cursos — ocupa 2/3 */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-base font-semibold text-[var(--text)] flex items-center gap-2">
-            <BookOpen size={16} className="text-[var(--blue)]" />
+          <h2 className="text-base font-medium text-[var(--text)] flex items-center gap-2">
+            <BookOpen size={16} className="text-[var(--blue)]" aria-hidden />
             Desempenho por curso
           </h2>
 
@@ -155,9 +155,9 @@ export default async function ReportsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)]">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">Curso</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">Alunos</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--muted)] uppercase tracking-wide w-40 hidden sm:table-cell">Conclusões</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[var(--muted)]">Curso</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-[var(--muted)]">Alunos</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-[var(--muted)] w-40 hidden sm:table-cell">Conclusões</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,18 +169,18 @@ export default async function ReportsPage() {
                             className="w-2 h-8 rounded-full shrink-0"
                             style={{ backgroundColor: c.accent_color }}
                           />
-                          <div>
-                            <p className="font-medium text-[var(--text)] leading-tight">{c.title}</p>
-                            <p className="text-xs text-[var(--muted)]">{c.creator_name}</p>
+                          <div className="min-w-0">
+                            <p className="font-medium text-[var(--text)] leading-tight truncate">{c.title}</p>
+                            <p className="text-xs text-[var(--muted)] truncate">{c.creator_name}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-[var(--text)]">
+                      <td className="px-4 py-3 text-right font-medium text-[var(--text)] tabular-nums">
                         {c.enrollments}
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <div className="flex flex-col gap-1">
-                          <span className="text-xs text-[var(--muted)]">
+                          <span className="text-xs text-[var(--muted)] tabular-nums">
                             {c.completions} / {c.enrollments}
                           </span>
                           <ProgressBar value={c.completions} max={c.enrollments} color={c.accent_color} />
@@ -194,8 +194,8 @@ export default async function ReportsPage() {
           )}
 
           {/* Matrículas recentes */}
-          <h2 className="text-base font-semibold text-[var(--text)] flex items-center gap-2 pt-2">
-            <Users size={16} className="text-[var(--amber)]" />
+          <h2 className="text-base font-medium text-[var(--text)] flex items-center gap-2 pt-2">
+            <Users size={16} className="text-[var(--amber)]" aria-hidden />
             Matrículas recentes
           </h2>
 
@@ -215,7 +215,7 @@ export default async function ReportsPage() {
                       <p className="text-xs text-[var(--muted)] truncate">{e.course_title}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-xs text-[var(--muted)]">{relativeDate(e.enrolled_at)}</span>
+                      <span className="text-xs text-[var(--muted)] tabular-nums">{relativeDate(e.enrolled_at)}</span>
                       {e.completed_at && <Badge variant="green">Concluído</Badge>}
                     </div>
                   </li>
@@ -227,8 +227,8 @@ export default async function ReportsPage() {
 
         {/* Top alunos — 1/3 */}
         <div className="space-y-4">
-          <h2 className="text-base font-semibold text-[var(--text)] flex items-center gap-2">
-            <Trophy size={16} className="text-[var(--amber)]" />
+          <h2 className="text-base font-medium text-[var(--text)] flex items-center gap-2">
+            <Trophy size={16} className="text-[var(--amber)]" aria-hidden />
             Top alunos por XP
           </h2>
 
@@ -242,32 +242,32 @@ export default async function ReportsPage() {
                     key={idx}
                     className={`flex items-center gap-3 px-4 py-3 ${idx < r.top_students.length - 1 ? 'border-b border-[var(--border)]' : ''}`}
                   >
-                    <span className="text-xs font-bold text-[var(--muted)] w-5 text-center shrink-0">
+                    <span className="text-xs font-medium text-[var(--muted)] w-5 text-center shrink-0 tabular-nums">
                       {idx + 1}
                     </span>
                     <Avatar name={s.name} url={s.avatar_url} size={8} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[var(--text)] truncate">{s.name}</p>
                       <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
-                        <span className="flex items-center gap-0.5">
-                          <Zap size={10} className="text-[var(--amber)]" />
+                        <span className="flex items-center gap-0.5 tabular-nums">
+                          <Zap size={10} className="text-[var(--amber)]" aria-hidden />
                           {s.total_xp.toLocaleString('pt-BR')}
                         </span>
                         {s.streak_days > 0 && (
-                          <span className="flex items-center gap-0.5">
-                            <Flame size={10} className="text-orange-400" />
+                          <span className="flex items-center gap-0.5 tabular-nums">
+                            <Flame size={10} className="text-orange-400" aria-hidden />
                             {s.streak_days}d
                           </span>
                         )}
                         {s.courses_completed > 0 && (
-                          <span className="flex items-center gap-0.5">
-                            <CheckCircle size={10} className="text-[var(--green)]" />
+                          <span className="flex items-center gap-0.5 tabular-nums">
+                            <CheckCircle size={10} className="text-[var(--green)]" aria-hidden />
                             {s.courses_completed}
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className="text-xs text-[var(--muted)] shrink-0">Lv{s.level}</span>
+                    <span className="text-xs text-[var(--muted)] shrink-0 tabular-nums">Lv{s.level}</span>
                   </li>
                 ))}
               </ul>
