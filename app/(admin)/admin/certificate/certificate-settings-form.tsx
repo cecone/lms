@@ -8,16 +8,33 @@ import { CertificateView } from '@/app/(dashboard)/courses/[id]/certificate/cert
 import { updateCertificateSettings } from './actions'
 
 const inputClass =
-  'w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] focus:outline-none focus:border-[var(--green)]'
+  'w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text)] ' +
+  'focus:outline-none focus:border-[var(--green)] focus:ring-1 focus:ring-[var(--green)]'
 
 // Data fixa no preview para evitar divergência de hidratação.
 const PREVIEW_ISSUED_AT = '2026-01-15T12:00:00.000Z'
+
+// Contraste WCAG da brand_color contra o fundo branco do certificado
+function lowContrastOnWhite(hex: string): boolean {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return false
+  const n = parseInt(m[1], 16)
+  const srgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  })
+  const lum = 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2]
+  const ratio = 1.05 / (lum + 0.05) // contraste contra branco (#fff)
+  return ratio < 3 // abaixo de 3:1 = texto grande ilegível
+}
 
 export function CertificateSettingsForm({ initial }: { initial: CertificateSettings }) {
   const [form, setForm] = useState<CertificateSettings>(initial)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, start] = useTransition()
+
+  const brandTooLight = lowContrastOnWhite(form.brand_color)
 
   function set<K extends keyof CertificateSettings>(key: K, value: CertificateSettings[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -59,19 +76,27 @@ export function CertificateSettingsForm({ initial }: { initial: CertificateSetti
             <div className="flex items-center gap-2">
               <input type="color" value={form.brand_color}
                 onChange={(e) => set('brand_color', e.target.value)}
+                aria-label="Seletor de cor da marca"
                 className="h-9 w-12 rounded-lg border border-[var(--border)] bg-transparent cursor-pointer" />
               <input className={inputClass} value={form.brand_color}
                 onChange={(e) => set('brand_color', e.target.value)} placeholder="#22c55e" />
             </div>
-            <p className="text-[11px] text-[var(--muted)]">
-              Usada como cor padrão. Cursos com cor própria mantêm a sua.
-            </p>
+            {brandTooLight ? (
+              <p className="text-[11px] text-[var(--amber)]">
+                Essa cor tem contraste baixo sobre o fundo branco do certificado — o texto pode ficar
+                difícil de ler. Considere um tom mais escuro.
+              </p>
+            ) : (
+              <p className="text-[11px] text-[var(--muted)]">
+                Usada como cor padrão. Cursos com cor própria mantêm a sua.
+              </p>
+            )}
           </div>
         </Section>
 
         <Section title="Textos">
           <Text label="Título" value={form.title}
-            onChange={(v) => set('title', v)} placeholder="Certificado de Conclusão" />
+            onChange={(v) => set('title', v)} placeholder="Certificado de conclusão" />
           <Text label="Frase de abertura" value={form.intro_text}
             onChange={(v) => set('intro_text', v)} placeholder="Certificamos que" />
           <Text label="Frase intermediária" value={form.middle_text}
@@ -101,7 +126,7 @@ export function CertificateSettingsForm({ initial }: { initial: CertificateSetti
           </p>
         </Section>
 
-        {error && <p className="text-sm text-[var(--red)]">{error}</p>}
+        {error && <p role="alert" className="text-sm text-[var(--red)]">{error}</p>}
 
         <div className="flex items-center gap-3">
           <Button onClick={save} loading={pending} disabled={pending}>
@@ -113,7 +138,7 @@ export function CertificateSettingsForm({ initial }: { initial: CertificateSetti
 
       {/* Preview ao vivo */}
       <div className="lg:sticky lg:top-6 self-start">
-        <p className="text-xs text-[var(--muted)] mb-3 uppercase tracking-wider font-semibold">Pré-visualização</p>
+        <p className="text-xs text-[var(--muted)] mb-3 font-medium">Pré-visualização</p>
         <div className="scale-[0.85] origin-top -mt-2">
           <CertificateView
             studentName="Maria Silva"
@@ -134,7 +159,7 @@ export function CertificateSettingsForm({ initial }: { initial: CertificateSetti
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 space-y-3">
-      <h2 className="text-sm font-semibold text-[var(--text)]">{title}</h2>
+      <h2 className="text-sm font-medium text-[var(--text)]">{title}</h2>
       {children}
     </div>
   )
